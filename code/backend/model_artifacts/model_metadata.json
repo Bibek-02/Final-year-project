@@ -1,0 +1,36 @@
+{
+  "project_title": "Design and Evaluation of an Explainable Web-Based DSS for Retail Demand Forecasting",
+  "dataset": "Rossmann Store Sales",
+  "selected_weekly_model": "XGBoost",
+  "selected_monthly_model": "XGBoost",
+  "weekly_target": "WeeklySales",
+  "monthly_target": "MonthlySales",
+  "weekly_features_count": 45,
+  "monthly_features_count": 41,
+  "weekly_test_metrics": {
+    "MAE": 1987.86,
+    "RMSE": 2945.179,
+    "MAPE": 4.881,
+    "RMSPE": 6.794
+  },
+  "monthly_test_metrics": {
+    "MAE": 8246.211,
+    "RMSE": 11074.851,
+    "MAPE": 4.567,
+    "RMSPE": 5.925
+  },
+  "explainability": [
+    "XGBoost feature importance",
+    "SHAP global",
+    "SHAP local"
+  ],
+  "artifact_first_arch": true,
+  "deployment": "FastAPI backend + React DSS frontend",
+  "api_endpoints": {
+    "forecast": "GET /forecast/{store_id}",
+    "shap_global": "GET /shap/global",
+    "shap_local": "GET /shap/local/{store_id}/{period}",
+    "compare": "GET /models/compare",
+    "metadata": "GET /metadata"
+  }
+}
