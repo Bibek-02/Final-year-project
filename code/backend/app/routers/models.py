@@ -36,23 +36,41 @@ def get_best_model(
     current_user = Depends(get_current_user),
 ):
     """
-    Returns the single best model per granularity based on lowest RMSE.
-    Used to highlight the champion model in the DSS dashboard header.
+    Returns the champion model per granularity exactly as recorded in
+    selected_models.csv — chosen during training by lowest validation MAE,
+    not re-derived here. Test-set metrics (MAE/RMSE/MAPE/RMSPE) for that
+    same model are looked up from final_model_comparison.csv and returned
+    alongside it for transparency; they are not what selected it.
     """
+    selection = store.selected_models[
+        store.selected_models["Forecast Type"].str.lower() == forecast_type.lower()
+    ]
+
+    if selection.empty:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No selected model found for forecast_type {forecast_type}."
+        )
+
+    champion = selection.iloc[0]["Selected Model"]
+
     df = store.model_comparison.copy()
-    df = df[df["Forecast Type"].str.lower() == forecast_type.lower()]
+    df = df[
+        (df["Forecast Type"].str.lower() == forecast_type.lower()) &
+        (df["Model"] == champion)
+    ]
 
     if df.empty:
         raise HTTPException(
             status_code=404,
-            detail=f"No model comparison data found for forecast_type {forecast_type}."
+            detail=f"No comparison metrics found for champion model '{champion}' ({forecast_type})."
         )
 
-    best = df.sort_values("RMSE").iloc[0]
+    best = df.iloc[0]
 
     return {
         "forecast_type" : forecast_type,
-        "best_model"    : best["Model"],
+        "best_model"    : champion,
         "MAE"           : round(float(best["MAE"]),   3),
         "RMSE"          : round(float(best["RMSE"]),  3),
         "MAPE"          : round(float(best["MAPE"]),  3),

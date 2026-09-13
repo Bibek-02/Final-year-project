@@ -8,14 +8,9 @@ def get_global_shap(forecast_type: str, top_n: int) -> dict:
     else:
         shap_df = store.monthly_shap_global
 
-    mean_shap = (
-        shap_df.abs()
-        .mean()
-        .reset_index()
-    )
-    mean_shap.columns = ["Feature", "Mean_SHAP"]
-    mean_shap = (
-        mean_shap
+    result = (
+        shap_df[["Feature", "Mean Absolute SHAP"]]
+        .rename(columns={"Mean Absolute SHAP": "Mean_SHAP"})
         .sort_values("Mean_SHAP", ascending=False)
         .head(top_n)
         .round(4)
@@ -24,7 +19,7 @@ def get_global_shap(forecast_type: str, top_n: int) -> dict:
     return {
         "forecast_type": forecast_type,
         "top_n"        : top_n,
-        "features"     : mean_shap.to_dict(orient="records"),
+        "features"     : result.to_dict(orient="records"),
     }
 
 

@@ -1,0 +1,3 @@
+Forecast Type,Selected Model,Validation MAE
+Weekly,XGBoost,2642.298
+Monthly,XGBoost,9352.965

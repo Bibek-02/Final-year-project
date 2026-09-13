@@ -64,6 +64,9 @@ def register(req: RegisterRequest, admin=Depends(require_admin)):
 def remove_user(username: str, admin=Depends(require_admin)):
     if username == "admin":
         raise HTTPException(status_code=400, detail="Cannot delete admin user.")
+    target = get_user(username)
+    if target and target.get("role") != "manager":
+        raise HTTPException(status_code=400, detail="Only manager accounts can be deleted.")
     result = delete_user(username)
     if not result:
         raise HTTPException(status_code=404, detail="User not found.")

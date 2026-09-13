@@ -1,0 +1,42 @@
+Feature,Mean Absolute SHAP,Readable Feature
+sales_lag_12,20232.986,sales twelve months ago
+EMA_6,10222.192,recent 6-month weighted sales trend
+EMA_3,9759.862,recent 3-month weighted sales trend
+sales_lag_1,5711.8535,previous period sales
+rolling_mean_6,2038.3882,recent 6-month average sales
+TimeIndex,1532.3744,time progression
+OpenDays,1254.5074,number of open days
+PromoDays,1230.319,promotion activity
+SchoolHolidayDays,678.1714,school holiday period
+rolling_mean_3,612.8159,recent 3-month average sales
+Month,584.21655,month of year
+Assortment_a,519.13666,Assortment_a
+StateHolidayDays,418.55725,state holiday period
+sales_lag_2,376.48788,sales two periods ago
+MonthStartDays,367.0241,month-start timing
+MonthEndDays,365.92218,month-end timing
+CompetitionOpenSinceYear,363.20255,CompetitionOpenSinceYear
+rolling_std_6,332.22217,recent 6-month sales variability
+sales_lag_3,284.0697,sales three months ago
+rolling_std_3,284.0598,recent 3-month sales variability
+CompetitionDistance,206.60895,distance to nearest competitor
+StoreType_d,142.82138,StoreType_d
+Promo2SinceYear,118.13494,Promo2SinceYear
+StoreType_a,107.9893,StoreType_a
+WeekendDays,98.39955,weekend days
+Assortment_c,94.9408,Assortment_c
+Store,67.96813,Store
+CompetitionOpenSinceMonth,52.076683,CompetitionOpenSinceMonth
+Assortment_b,41.471012,Assortment_b
+Quarter,41.431606,quarter of year
+Promo2SinceWeek,23.711132,Promo2SinceWeek
+StoreType_c,21.44649,StoreType_c
+"PromoInterval_Jan,Apr,Jul,Oct",20.425129,"PromoInterval_Jan,Apr,Jul,Oct"
+StoreType_b,15.854448,StoreType_b
+"PromoInterval_Mar,Jun,Sept,Dec",14.641493,"PromoInterval_Mar,Jun,Sept,Dec"
+Promo2,3.9120555,long-term promotion participation
+"PromoInterval_Feb,May,Aug,Nov",2.0893736,"PromoInterval_Feb,May,Aug,Nov"
+CompetitionOpenKnown,0.7894471,competition opening date availability
+Year,0.0,calendar year
+periods_since_last_promo,0.0,time since previous promotion
+PromoInterval_none,0.0,PromoInterval_none

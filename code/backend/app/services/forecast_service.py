@@ -27,13 +27,9 @@ def get_forecast(store_id: int, forecast_type: str) -> dict:
     of granularity, so callers never need to branch on forecast_type.
     """
     if forecast_type == "weekly":
-        df        = store.weekly_predictions
-        date_col  = "WeekStartDate"
-        sales_col = "WeeklySales"
+        df = store.weekly_predictions
     else:
-        df        = store.monthly_predictions
-        date_col  = "MonthStartDate"
-        sales_col = "MonthlySales"
+        df = store.monthly_predictions
 
     store_df = df[df["Store"] == store_id].copy()
 
@@ -43,14 +39,14 @@ def get_forecast(store_id: int, forecast_type: str) -> dict:
             detail=f"No forecast data found for Store {store_id}."
         )
 
-    store_df[date_col]     = store_df[date_col].astype(str)
-    store_df["Prediction"] = store_df["Prediction"].round(2)
-    store_df[sales_col]    = store_df[sales_col].round(2)
+    store_df["Period"]          = store_df["Period"].astype(str)
+    store_df["Predicted Sales"] = store_df["Predicted Sales"].round(2)
+    store_df["Actual Sales"]    = store_df["Actual Sales"].round(2)
 
     store_df = store_df.rename(columns={
-        date_col : "period",
-        sales_col: "actual_sales",
-        "Prediction": "prediction",
+        "Period"         : "period",
+        "Actual Sales"   : "actual_sales",
+        "Predicted Sales": "prediction",
     })
     records = store_df[["period", "actual_sales", "prediction"]].to_dict(orient="records")
 

@@ -20,6 +20,7 @@ class ArtifactStore:
     weekly_importance     = None
     monthly_importance    = None
     model_comparison      = None
+    selected_models       = None
     dss_output            = None
     model_metadata        = None
 
@@ -35,17 +36,11 @@ def load_all_artifacts():
     store.weekly_features    = joblib.load(f"{ARTIFACT_DIR}/weekly_feature_columns.pkl")
     store.monthly_features   = joblib.load(f"{ARTIFACT_DIR}/monthly_feature_columns.pkl")
 
-    store.weekly_predictions  = pd.read_csv(
-        f"{ARTIFACT_DIR}/weekly_test_predictions.csv",
-        parse_dates=["WeekStartDate"]
-    )
-    store.monthly_predictions = pd.read_csv(
-        f"{ARTIFACT_DIR}/monthly_test_predictions.csv",
-        parse_dates=["MonthStartDate"]
-    )
+    store.weekly_predictions  = pd.read_csv(f"{ARTIFACT_DIR}/weekly_test_predictions.csv")
+    store.monthly_predictions = pd.read_csv(f"{ARTIFACT_DIR}/monthly_test_predictions.csv")
 
-    store.weekly_shap_global  = pd.read_csv(f"{ARTIFACT_DIR}/weekly_global_shap_values.csv")
-    store.monthly_shap_global = pd.read_csv(f"{ARTIFACT_DIR}/monthly_global_shap_values.csv")
+    store.weekly_shap_global  = pd.read_csv(f"{ARTIFACT_DIR}/weekly_global_shap_importance.csv")
+    store.monthly_shap_global = pd.read_csv(f"{ARTIFACT_DIR}/monthly_global_shap_importance.csv")
 
     store.weekly_shap_local   = pd.read_csv(f"{ARTIFACT_DIR}/weekly_local_shap_explanation.csv")
     store.monthly_shap_local  = pd.read_csv(f"{ARTIFACT_DIR}/monthly_local_shap_explanation.csv")
@@ -53,8 +48,9 @@ def load_all_artifacts():
     store.weekly_importance   = pd.read_csv(f"{ARTIFACT_DIR}/xgb_weekly_feature_importance.csv")
     store.monthly_importance  = pd.read_csv(f"{ARTIFACT_DIR}/xgb_monthly_feature_importance.csv")
 
-    store.model_comparison    = pd.read_csv(f"{ARTIFACT_DIR}/final_model_comparison_all_models.csv")
-    store.dss_output          = pd.read_csv(f"{ARTIFACT_DIR}/sample_dss_forecast_output.csv")
+    store.model_comparison    = pd.read_csv(f"{ARTIFACT_DIR}/final_model_comparison.csv")
+    store.selected_models     = pd.read_csv(f"{ARTIFACT_DIR}/selected_models.csv")
+    store.dss_output          = pd.read_csv(f"{ARTIFACT_DIR}/dss_forecast_output.csv")
 
     with open(f"{ARTIFACT_DIR}/model_metadata.json") as f:
         store.model_metadata = json.load(f)

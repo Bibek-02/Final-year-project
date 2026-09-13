@@ -1,0 +1,7 @@
+Model,Forecast Type,MAE,RMSE,MAPE,RMSPE
+XGBoost,Weekly,2173.826,3181.982,5.334,7.362
+Random Forest,Weekly,2760.274,4164.14,6.674,9.627
+Moving Average 12 Weeks,Weekly,6485.035,7511.622,16.499,19.266
+XGBoost,Monthly,8462.312,11351.831,4.729,6.283
+Random Forest,Monthly,9234.614,12643.827,5.224,7.987
+Moving Average 6 Months,Monthly,12816.886,17083.914,7.109,9.717

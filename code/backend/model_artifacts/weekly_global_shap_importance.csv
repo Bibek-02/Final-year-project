@@ -1,0 +1,46 @@
+Feature,Mean Absolute SHAP,Readable Feature
+PromoDays,5809.7847,promotion activity
+rolling_mean_12,3662.9463,recent 12-week average sales
+sales_lag_52,2850.4868,sales fifty-two weeks ago
+EMA_8,1595.13,recent 8-week weighted sales trend
+rolling_mean_4,1322.6946,recent 4-week average sales
+OpenDays,714.4004,number of open days
+EMA_4,576.77496,recent 4-week weighted sales trend
+WeekOfYear,541.00555,week of year
+SchoolHolidayDays,526.1519,school holiday period
+rolling_mean_8,478.8478,recent 8-week average sales
+sales_lag_2,426.94907,sales two periods ago
+sales_lag_1,346.0028,previous period sales
+Year,332.0765,calendar year
+sales_lag_4,317.88724,sales four weeks ago
+periods_since_last_promo,315.1739,time since previous promotion
+MonthStartDays,307.1434,month-start timing
+TimeIndex,279.2853,time progression
+rolling_std_4,217.0963,recent 4-week sales variability
+MonthEndDays,209.47379,month-end timing
+WeekendDays,169.32169,weekend days
+StateHolidayDays,138.09088,state holiday period
+rolling_std_12,136.02037,recent 12-week sales variability
+rolling_std_8,77.24836,recent 8-week sales variability
+CompetitionOpenSinceYear,64.02379,CompetitionOpenSinceYear
+StoreType_a,60.336693,StoreType_a
+Assortment_c,60.29053,Assortment_c
+CompetitionDistance,57.62446,distance to nearest competitor
+sales_lag_8,50.99819,sales eight weeks ago
+Month,50.22569,month of year
+Assortment_a,43.264675,Assortment_a
+Promo2SinceYear,33.036427,Promo2SinceYear
+Promo2SinceWeek,27.022057,Promo2SinceWeek
+CompetitionOpenSinceMonth,21.727087,CompetitionOpenSinceMonth
+StoreType_b,21.68912,StoreType_b
+Quarter,18.557772,quarter of year
+Promo2,18.086164,long-term promotion participation
+"PromoInterval_Jan,Apr,Jul,Oct",15.413201,"PromoInterval_Jan,Apr,Jul,Oct"
+StoreType_c,12.517941,StoreType_c
+Store,11.808072,Store
+StoreType_d,7.393016,StoreType_d
+"PromoInterval_Feb,May,Aug,Nov",6.5778394,"PromoInterval_Feb,May,Aug,Nov"
+"PromoInterval_Mar,Jun,Sept,Dec",2.0133846,"PromoInterval_Mar,Jun,Sept,Dec"
+Assortment_b,1.8961139,Assortment_b
+CompetitionOpenKnown,0.7220297,competition opening date availability
+PromoInterval_none,0.0,PromoInterval_none

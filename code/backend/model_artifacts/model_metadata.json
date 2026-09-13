@@ -1,36 +1,52 @@
 {
-  "project_title": "Design and Evaluation of an Explainable Web-Based DSS for Retail Demand Forecasting",
+  "project_title": "Explainable Sales Forecasting with AI-Generated Retail Recommendations: A Rossmann Case Study",
   "dataset": "Rossmann Store Sales",
-  "selected_weekly_model": "XGBoost",
-  "selected_monthly_model": "XGBoost",
-  "weekly_target": "WeeklySales",
-  "monthly_target": "MonthlySales",
-  "weekly_features_count": 45,
-  "monthly_features_count": 41,
-  "weekly_test_metrics": {
-    "MAE": 1987.86,
-    "RMSE": 2945.179,
-    "MAPE": 4.881,
-    "RMSPE": 6.794
+  "forecasting": {
+    "weekly": {
+      "selected_model": "XGBoost",
+      "target": "WeeklySales",
+      "feature_count": 45,
+      "validation_mae": 2642.298,
+      "test_metrics": {
+        "MAE": 2173.826,
+        "RMSE": 3181.982,
+        "MAPE": 5.334,
+        "RMSPE": 7.362
+      }
+    },
+    "monthly": {
+      "selected_model": "XGBoost",
+      "target": "MonthlySales",
+      "feature_count": 41,
+      "validation_mae": 9352.965,
+      "test_metrics": {
+        "MAE": 8462.312,
+        "RMSE": 11351.831,
+        "MAPE": 4.729,
+        "RMSPE": 6.283
+      }
+    }
   },
-  "monthly_test_metrics": {
-    "MAE": 8246.211,
-    "RMSE": 11074.851,
-    "MAPE": 4.567,
-    "RMSPE": 5.925
+  "model_selection": {
+    "primary_metric": "Validation MAE",
+    "test_set_use": "Final evaluation only"
   },
   "explainability": [
     "XGBoost feature importance",
-    "SHAP global",
-    "SHAP local"
+    "Global SHAP importance",
+    "Local SHAP explanations"
   ],
-  "artifact_first_arch": true,
-  "deployment": "FastAPI backend + React DSS frontend",
-  "api_endpoints": {
-    "forecast": "GET /forecast/{store_id}",
-    "shap_global": "GET /shap/global",
-    "shap_local": "GET /shap/local/{store_id}/{period}",
-    "compare": "GET /models/compare",
-    "metadata": "GET /metadata"
+  "architecture": {
+    "artifact_first": true,
+    "runtime_retraining": false,
+    "backend": "FastAPI",
+    "frontend": "React",
+    "ai_recommendations": true
+  },
+  "dss_output": {
+    "contains_actual_sales": false,
+    "contains_predicted_sales": true,
+    "contains_shap_factors": true,
+    "contains_forecast_summary": true
   }
 }

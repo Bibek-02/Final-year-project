@@ -9,10 +9,9 @@ class DssOutputRow(BaseModel):
     period           : str   = Field(alias="Period")
     forecast_type    : str   = Field(alias="Forecast Type")
     predicted_sales  : float = Field(alias="Predicted Sales")
-    actual_sales     : float = Field(alias="Actual Sales")
     positive_factors : str   = Field(alias="Important Positive Factors")
     negative_factors : str   = Field(alias="Important Negative Factors")
-    business_message : str   = Field(alias="Business Message")
+    forecast_summary : str   = Field(alias="Forecast Summary")
 
 
 class DssOutputResponse(BaseModel):
