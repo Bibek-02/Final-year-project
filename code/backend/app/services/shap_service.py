@@ -9,7 +9,7 @@ def get_global_shap(forecast_type: str, top_n: int) -> dict:
         shap_df = store.monthly_shap_global
 
     result = (
-        shap_df[["Feature", "Mean Absolute SHAP"]]
+        shap_df[["Feature", "Readable Feature", "Mean Absolute SHAP"]]
         .rename(columns={"Mean Absolute SHAP": "Mean_SHAP"})
         .sort_values("Mean_SHAP", ascending=False)
         .head(top_n)

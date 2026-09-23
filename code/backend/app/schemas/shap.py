@@ -5,8 +5,9 @@ from typing import Literal
 class GlobalShapFeature(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
-    feature  : str   = Field(alias="Feature")
-    mean_shap: float = Field(alias="Mean_SHAP")
+    feature         : str   = Field(alias="Feature")
+    readable_feature: str   = Field(alias="Readable Feature")
+    mean_shap       : float = Field(alias="Mean_SHAP")
 
 
 class GlobalShapResponse(BaseModel):
@@ -18,12 +19,13 @@ class GlobalShapResponse(BaseModel):
 class LocalShapRow(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
-    store        : int   = Field(alias="Store")
-    period       : str   = Field(alias="Period")
-    feature      : str   = Field(alias="Feature")
-    feature_value: float = Field(alias="Feature Value")
-    shap_value   : float = Field(alias="SHAP Value")
-    effect       : str   = Field(alias="Effect")
+    store           : int   = Field(alias="Store")
+    period          : str   = Field(alias="Period")
+    feature         : str   = Field(alias="Feature")
+    readable_feature: str   = Field(alias="Readable Feature")
+    feature_value   : float = Field(alias="Feature Value")
+    shap_value      : float = Field(alias="SHAP Value")
+    effect          : str   = Field(alias="Effect")
 
 
 class LocalShapResponse(BaseModel):

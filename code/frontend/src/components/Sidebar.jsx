@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
-  LayoutDashboard, TrendingUp, Search, Briefcase,
-  Bot, Scale, Users, Menu, X, Trophy, ChevronLeft, ChevronRight, LogOut,
+  LayoutDashboard, TrendingUp, Search,
+  Bot, Scale, Users, Building2, Menu, X, Trophy, ChevronLeft, ChevronRight, LogOut,
   Sun, Moon,
 } from 'lucide-react';
 import client from '../api/client';
@@ -16,7 +16,7 @@ const links = [
   { key: 'dashboard',   label: 'Dashboard',               icon: LayoutDashboard, group: 'Overview', adminOnly: false },
   { key: 'forecast',    label: 'Forecast',                icon: TrendingUp,      group: 'Analysis',  adminOnly: false },
   { key: 'explanation', label: 'Explanation',             icon: Search,          group: 'Analysis',  adminOnly: false },
-  { key: 'business',    label: 'Business Interpretation', icon: Briefcase,       group: 'Analysis',  adminOnly: false },
+  { key: 'storeComparison', label: 'Store Comparison',    icon: Building2,       group: 'Analysis',  adminOnly: true  },
   { key: 'agent',       label: 'AI Recommendations',      icon: Bot,             group: 'Decide',    adminOnly: false },
   { key: 'compare',     label: 'Models',                  icon: Scale,           group: 'Evidence',  adminOnly: false },
   { key: 'users',       label: 'Users',                   icon: Users,           group: 'Admin',     adminOnly: true  },

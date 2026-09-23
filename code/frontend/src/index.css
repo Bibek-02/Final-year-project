@@ -1,0 +1,266 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #f0f2f7;
+  color: #1a1a2e;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 150ms, color 150ms;
+}
+
+.dark body {
+  background: #030712;
+  color: #e5e7eb;
+}
+
+.card {
+  background-color: white;
+  border-radius: 1rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  border: 1px solid #f3f4f6;
+  padding: 1.5rem;
+}
+
+.dark .card {
+  background-color: #111827;
+  border-color: #1f2937;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+}
+
+.card-hover {
+  transition: all 200ms;
+}
+
+.card-hover:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.btn-primary {
+  background-color: #4f46e5;
+  color: white;
+  font-weight: 600;
+  border-radius: 0.75rem;
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
+  transition: all 200ms;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  border: none;
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  background-color: #4338ca;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.btn-primary:active {
+  transform: scale(0.95);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.metric-card {
+  background-color: white;
+  border-radius: 1rem;
+  padding: 1rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  border: 1px solid #f3f4f6;
+  transition: all 200ms;
+}
+
+.dark .metric-card {
+  background-color: #111827;
+  border-color: #1f2937;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+}
+
+.metric-card:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.page-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  letter-spacing: -0.02em;
+}
+
+.dark .page-title {
+  color: #f9fafb;
+}
+
+.page-subtitle {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+.dark .page-subtitle {
+  color: #9ca3af;
+}
+
+.section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 1rem;
+}
+
+.dark .section-title {
+  color: #f3f4f6;
+}
+
+.input-field {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  background-color: #f9fafb;
+  color: #111827;
+  transition: all 200ms;
+}
+
+.input-field:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+  border-color: #818cf8;
+  background-color: white;
+}
+
+.dark .input-field {
+  background-color: #030712;
+  border-color: #374151;
+  color: #e5e7eb;
+}
+
+.dark .input-field::placeholder {
+  color: #6b7280;
+}
+
+.dark .input-field:focus {
+  box-shadow: 0 0 0 2px rgba(129, 140, 248, 0.2);
+  border-color: #818cf8;
+  background-color: #111827;
+}
+
+.table-header {
+  background-color: #f9fafb;
+  color: #6b7280;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.dark .table-header {
+  background-color: #111827;
+  color: #9ca3af;
+}
+
+.table-row {
+  border-top: 1px solid #f3f4f6;
+  transition: background-color 150ms;
+}
+
+.table-row:hover {
+  background-color: rgba(79, 70, 229, 0.03);
+}
+
+.dark .table-row {
+  border-top-color: #1f2937;
+}
+
+.dark .table-row:hover {
+  background-color: rgba(129, 140, 248, 0.06);
+}
+
+/* Typography scale — fills the gaps around the existing .page-title/
+   .section-title so every page reaches for the same names instead of
+   ad hoc text-gray-500 / text-gray-400 / font-bold combos. */
+
+.card-title {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.dark .card-title {
+  color: #f3f4f6;
+}
+
+.text-secondary {
+  color: #6b7280;
+}
+
+.dark .text-secondary {
+  color: #9ca3af;
+}
+
+.field-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dark .field-label {
+  color: #9ca3af;
+}
+
+.kpi-value {
+  font-size: 1.875rem;
+  line-height: 2.25rem;
+  font-weight: 700;
+}
+
+/* Dot-grid backdrop tile — used behind decorative dark panels (Login).
+   Tailwind's arbitrary-value syntax can't express a repeating radial
+   gradient cleanly, so this stays hand-written like the classes above. */
+.bg-dot-grid {
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Scoped, unobtrusive scrollbar for the sidebar's own scroll container —
+   used instead of the browser default so an occasional inner scroll (very
+   short viewports, many admin nav items) doesn't read as a second,
+   heavyweight scrollbar next to the page's main one. */
+.sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+
+.sidebar-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

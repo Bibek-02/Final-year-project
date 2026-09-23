@@ -1,9 +1,26 @@
 from fastapi import APIRouter, Query, Depends
 from app.core.dependencies import get_current_user, enforce_store_scope
-from app.schemas.agent import AgentRecommendResponse
+from app.schemas.agent import AgentRecommendResponse, AgentEvidence
 from app.services import agent_service
 
 router = APIRouter()
+
+
+@router.get("/recommend/evidence", response_model=AgentEvidence)
+def get_evidence(
+    store_id     : int = Query(default=1),
+    forecast_type: str = Query(default="weekly", enum=["weekly", "monthly"]),
+    current_user = Depends(get_current_user),
+):
+    """
+    Returns the minimal, allowlisted forecast + SHAP evidence context that
+    would be used to build the Claude recommendation prompt for this store's
+    latest available period — without calling Claude. Lets the frontend show
+    an evidence preview and check forecast/SHAP consistency before spending
+    a generation request.
+    """
+    enforce_store_scope(current_user, store_id)
+    return agent_service.get_evidence(store_id, forecast_type)
 
 
 @router.post("/recommend", response_model=AgentRecommendResponse)

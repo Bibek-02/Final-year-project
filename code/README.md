@@ -2,9 +2,8 @@
 
 An explainable, web-based decision support system for retail demand
 forecasting, built around the Rossmann Store Sales dataset. Built for the
-BSc thesis *"Evaluation of an Explainable Web-Based Decision Support System
-Integrating Agentic AI for Retail Demand Forecasting: A Case Study Using the
-Rossmann Store Sales Dataset."*
+BSc thesis *"Explainable Sales Forecasting with AI-Generated Retail
+Recommendations: A Rossmann Case Study."*
 
 XGBoost forecasts and their SHAP-based explanations are precomputed
 ("artefact-first") and served through a role-scoped FastAPI backend to a

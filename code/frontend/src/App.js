@@ -5,16 +5,17 @@ import StoreSelector from './components/StoreSelector';
 import Dashboard from './pages/forecast/Dashboard';
 import ForecastChart from './pages/forecast/ForecastChart';
 import Explanation from './pages/explain/Explanation';
-import BusinessPanel from './pages/explain/BusinessPanel';
 import ModelCompare from './pages/compare/ModelCompare';
+import StoreComparison, { DEFAULT_COMPARISON_FILTERS } from './pages/compare/StoreComparison';
 import Agent from './pages/agent/Agent';
 import UserManagement from './pages/admin/UserManagement';
 
 export default function App() {
-  const [user,          setUser]          = useState(null);
-  const [activePage,    setActivePage]    = useState('dashboard');
-  const [selectedStore, setSelectedStore] = useState(1);
-  const [forecastType,  setForecastType]  = useState('weekly');
+  const [user,               setUser]               = useState(null);
+  const [activePage,         setActivePage]         = useState('dashboard');
+  const [selectedStore,      setSelectedStore]      = useState(1);
+  const [forecastType,       setForecastType]       = useState('weekly');
+  const [comparisonFilters,  setComparisonFilters]  = useState(DEFAULT_COMPARISON_FILTERS);
 
   const handleLogin = (userData) => {
     setUser(userData);
@@ -38,8 +39,20 @@ export default function App() {
       case 'dashboard':   return <Dashboard       {...props} />;
       case 'forecast':    return <ForecastChart   {...props} />;
       case 'explanation': return <Explanation     {...props} />;
-      case 'business':    return <BusinessPanel   {...props} />;
+      // 'business' is a retired page key — redirect any lingering reference to the merged Explanation page.
+      case 'business':    return <Explanation     {...props} />;
       case 'compare':     return <ModelCompare              />;
+      case 'storeComparison': return (
+        <StoreComparison
+          forecastType={forecastType}
+          setForecastType={setForecastType}
+          setSelectedStore={setSelectedStore}
+          setActivePage={setActivePage}
+          filters={comparisonFilters}
+          setFilters={setComparisonFilters}
+          user={user}
+        />
+      );
       case 'agent':       return <Agent           {...props} />;
       case 'users':       return <UserManagement  user={user} />;
       default:            return <Dashboard       {...props} />;
@@ -57,14 +70,16 @@ export default function App() {
       />
       <div className="flex-1 min-w-0">
         <div className="max-w-6xl mx-auto px-5 py-6">
-          <StoreSelector
-            selectedStore={selectedStore}
-            setSelectedStore={setSelectedStore}
-            forecastType={forecastType}
-            setForecastType={setForecastType}
-            userRole={user?.role}
-            assignedStore={user?.assigned_store}
-          />
+          {activePage !== 'storeComparison' && (
+            <StoreSelector
+              selectedStore={selectedStore}
+              setSelectedStore={setSelectedStore}
+              forecastType={forecastType}
+              setForecastType={setForecastType}
+              userRole={user?.role}
+              assignedStore={user?.assigned_store}
+            />
+          )}
           {renderPage()}
         </div>
       </div>
