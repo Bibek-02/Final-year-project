@@ -95,6 +95,13 @@ body {
   transform: translateY(-2px);
 }
 
+/* Opt-in lighter padding for a KpiCard in a denser layout (e.g. the
+   Dashboard's summary row) — never applied unless a page explicitly asks
+   for it via KpiCard's `dense` prop, so every other usage is unaffected. */
+.metric-card--dense {
+  padding: 0.75rem 1rem;
+}
+
 .page-title {
   font-size: 1.5rem;
   font-weight: 700;

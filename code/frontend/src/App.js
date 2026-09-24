@@ -16,6 +16,10 @@ export default function App() {
   const [selectedStore,      setSelectedStore]      = useState(1);
   const [forecastType,       setForecastType]       = useState('weekly');
   const [comparisonFilters,  setComparisonFilters]  = useState(DEFAULT_COMPARISON_FILTERS);
+  // One-shot handoff: set by a page just before navigating away so the
+  // receiving page can seed its own local period state to match, then
+  // cleared by that page once consumed (see each page's mount effect).
+  const [handoffPeriod,      setHandoffPeriod]      = useState(null);
 
   const handleLogin = (userData) => {
     setUser(userData);
@@ -32,7 +36,7 @@ export default function App() {
 
   if (!user) return <Login onLogin={handleLogin} />;
 
-  const props = { selectedStore, forecastType, setActivePage };
+  const props = { selectedStore, forecastType, setActivePage, handoffPeriod, setHandoffPeriod };
 
   const renderPage = () => {
     switch (activePage) {

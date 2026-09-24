@@ -175,7 +175,7 @@ describe('buildGlobalShapSummary', () => {
     const rows = normalizeGlobalRows(GLOBAL_WEEKLY);
     expect(buildGlobalShapSummary(rows, 'weekly')).toBe(
       'Promotion activity has the largest average influence on weekly predictions, '
-      + 'followed by recent 12-week average sales and sales fifty-two weeks ago.'
+      + 'followed by average sales over the previous 12 weeks and sales fifty-two weeks ago.'
     );
   });
 
@@ -230,7 +230,7 @@ describe('buildLocalExplanation and getTopDrivers/buildLocalShapSummary', () => 
 
   test('builds a deterministic plain-English summary sentence', () => {
     expect(buildLocalShapSummary(localExplanation.contributions)).toBe(
-      'Promotion activity increased this prediction, while recent 12-week average sales had the largest decreasing effect.'
+      'Promotion activity increased this prediction, while average sales over the previous 12 weeks had the largest decreasing effect.'
     );
   });
 });
@@ -273,7 +273,7 @@ describe('buildBusinessInterpretation', () => {
     const text = buildBusinessInterpretation(localExplanation);
     expect(text).toBe(
       "The weekly forecast of 26,872 is 13,670 below the model's baseline output. "
-      + 'Negative model contributions from recent 12-week average sales and sales fifty-two weeks ago '
+      + 'Negative model contributions from average sales over the previous 12 weeks and sales fifty-two weeks ago '
       + 'reduced the prediction more than promotion activity increased it.'
     );
     expect(text.toLowerCase()).not.toContain('caused');
@@ -382,7 +382,7 @@ test('global rows render sorted, with the deterministic summary sentence built f
 
   expect(screen.getByText(
     'Promotion activity has the largest average influence on weekly predictions, '
-    + 'followed by recent 12-week average sales and sales fifty-two weeks ago.'
+    + 'followed by average sales over the previous 12 weeks and sales fifty-two weeks ago.'
   )).toBeInTheDocument();
 
   // Ranked-list accessible alternative carries the same data as the chart.
@@ -526,7 +526,7 @@ test('the technical table\'s full-precision tooltip uses the real minus sign, no
 
   fireEvent.click(screen.getByText('Show technical details'));
   const technicalTable = screen.getByRole('table');
-  const negativeRow = within(technicalTable).getByText('Recent 12-week average sales').closest('tr');
+  const negativeRow = within(technicalTable).getByText('Average sales over the previous 12 weeks').closest('tr');
   const valueCell = within(negativeRow).getByText('−5,085');
   expect(valueCell).toHaveAttribute('title', 'Full precision: −5085');
 });
@@ -579,7 +579,7 @@ test('renders the deterministic business interpretation inside the Selected fore
   expect(screen.getByText('Business interpretation')).toBeInTheDocument();
   expect(screen.getByText(
     "The weekly forecast of 26,872 is 13,670 below the model's baseline output. "
-    + 'Negative model contributions from recent 12-week average sales and sales fifty-two weeks ago '
+    + 'Negative model contributions from average sales over the previous 12 weeks and sales fifty-two weeks ago '
     + 'reduced the prediction more than promotion activity increased it.'
   )).toBeInTheDocument();
   expect(screen.getByText(/not a business recommendation/i)).toBeInTheDocument();
@@ -593,35 +593,40 @@ test('does not render the AI Recommendations handoff when no page navigator is s
   expect(screen.queryByRole('button', { name: /open ai recommendations/i })).not.toBeInTheDocument();
 });
 
-test('the AI Recommendations handoff navigates to the agent page, preserving the shared store/forecast-type state', async () => {
+test('the AI Recommendations handoff navigates to the agent page, handing off the shared store/forecast-type/period state', async () => {
   mockHappyPath();
   const setActivePage = jest.fn();
-  await renderExplanation({ setActivePage });
+  const setHandoffPeriod = jest.fn();
+  await renderExplanation({ setActivePage, setHandoffPeriod });
   await openSelectedForecastTab();
 
   expect(screen.getByRole('button', { name: 'Open AI Recommendations' })).toBeInTheDocument();
-  expect(screen.queryByText(/not the historical period currently selected/i)).not.toBeInTheDocument();
 
   fireEvent.click(screen.getByRole('button', { name: /open ai recommendations/i }));
+  expect(setHandoffPeriod).toHaveBeenCalledWith('2015-07-27'); // latest period, default selection
   expect(setActivePage).toHaveBeenCalledWith('agent');
 });
 
-test('on a historical period, the handoff clarifies that AI Recommendations use the latest forecast instead', async () => {
+test('on a historical period, the handoff still offers to open AI Recommendations and hands off that specific period', async () => {
+  // Agent.jsx now honours a handed-off historical period (it is no longer
+  // restricted to the latest forecast), so the handoff button's label and
+  // behaviour stay the same regardless of which period is selected here —
+  // there is no "latest forecast only" caveat to show any more.
   mockHappyPath();
   const setActivePage = jest.fn();
-  await renderExplanation({ setActivePage });
+  const setHandoffPeriod = jest.fn();
+  await renderExplanation({ setActivePage, setHandoffPeriod });
   await openSelectedForecastTab();
 
   await act(async () => {
-    fireEvent.click(screen.getByRole('button', { name: 'Previous period' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Previous period' })); // -> 2015-07-20
   });
 
-  expect(screen.getByRole('button', { name: 'Open latest AI Recommendations' })).toBeInTheDocument();
-  expect(screen.getByText(
-    'AI Recommendations use the latest available forecast, not the historical period currently selected.'
-  )).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Open AI Recommendations' })).toBeInTheDocument();
+  expect(screen.queryByText(/latest available forecast/i)).not.toBeInTheDocument();
 
-  fireEvent.click(screen.getByRole('button', { name: 'Open latest AI Recommendations' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Open AI Recommendations' }));
+  expect(setHandoffPeriod).toHaveBeenCalledWith('2015-07-20');
   expect(setActivePage).toHaveBeenCalledWith('agent');
 });
 

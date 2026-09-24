@@ -1,8 +1,8 @@
 import React from 'react';
 
-export default function PageHeader({ icon: Icon, title, titleAccent, subtitle, meta }) {
+export default function PageHeader({ icon: Icon, title, titleAccent, subtitle, meta, className = 'mb-6' }) {
   return (
-    <div className="mb-6 flex items-start justify-between gap-3 flex-wrap">
+    <div className={`${className} flex items-start justify-between gap-3 flex-wrap`}>
       <div className="flex items-start gap-3">
         {Icon && (
           <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-500/10 rounded-xl

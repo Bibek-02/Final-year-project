@@ -14,20 +14,20 @@ export const FEATURE_LABELS = {
   sales_lag_8             : 'Sales eight weeks ago',
   sales_lag_12            : 'Sales from the same month last year',
   sales_lag_52            : 'Sales from the same week last year',
-  rolling_mean_3          : 'Recent 3-period average',
-  rolling_mean_4          : 'Recent 4-week average',
-  rolling_mean_6          : 'Recent 6-period average',
-  rolling_mean_8          : 'Recent 8-week average',
-  rolling_mean_12         : 'Recent 12-week average',
+  rolling_mean_3          : 'Average sales over the previous 3 months',
+  rolling_mean_4          : 'Average sales over the previous 4 weeks',
+  rolling_mean_6          : 'Average sales over the previous 6 months',
+  rolling_mean_8          : 'Average sales over the previous 8 weeks',
+  rolling_mean_12         : 'Average sales over the previous 12 weeks',
   rolling_std_3           : 'Recent 3-period sales variability',
   rolling_std_4           : 'Recent 4-week sales variability',
   rolling_std_6           : 'Recent 6-period sales variability',
   rolling_std_8           : 'Recent 8-week sales variability',
   rolling_std_12          : 'Recent 12-week sales variability',
-  EMA_3                   : 'Recent 3-period weighted trend',
-  EMA_4                   : 'Recent 4-week weighted trend',
-  EMA_6                   : 'Recent 6-period weighted trend',
-  EMA_8                   : 'Recent 8-week weighted trend',
+  EMA_3                   : 'Recent sales trend over the previous 3 months',
+  EMA_4                   : 'Recent sales trend over the previous 4 weeks',
+  EMA_6                   : 'Recent sales trend over the previous 6 months',
+  EMA_8                   : 'Recent sales trend over the previous 8 weeks',
   TimeIndex               : 'Time progression',
   Year                    : 'Calendar year',
   Month                   : 'Month of year',
@@ -55,6 +55,18 @@ export function capitalize(s) {
   return s && s.length ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 }
 
+// Features where this file's own wording is deliberately plainer than the
+// artifact's own precomputed "Readable Feature" text (e.g. the artifact says
+// "recent 4-week average sales"; this says "Average sales over the previous
+// 4 weeks") — checked before the API's text, unlike every other feature
+// below, which still prefers the artifact's own humanisation. Mirrored in
+// backend/app/core/feature_labels.py so Agent.jsx's evidence preview (which
+// calls that dict directly, not this one) reads the same way.
+const PREFER_LOCAL_WORDING = new Set([
+  'rolling_mean_3', 'rolling_mean_4', 'rolling_mean_6', 'rolling_mean_8', 'rolling_mean_12',
+  'EMA_3', 'EMA_4', 'EMA_6', 'EMA_8',
+]);
+
 // Prefer the artifact's own precomputed "Readable Feature" text (present on
 // both /shap/global and /shap/local rows) when it's actually been humanised
 // by the offline pipeline — it covers more features than this file's hand
@@ -64,6 +76,7 @@ export function capitalize(s) {
 // raw calendar/competition counters), which equal their raw Feature verbatim
 // in the artifact — see test_readable_feature_can_equal_raw_feature_for_unmapped_columns.
 export function getFeatureLabel(rawFeature, apiReadableFeature) {
+  if (PREFER_LOCAL_WORDING.has(rawFeature)) return FEATURE_LABELS[rawFeature];
   const isHumanized = apiReadableFeature && apiReadableFeature !== rawFeature;
   return capitalize(isHumanized ? apiReadableFeature : readableLabel(rawFeature));
 }

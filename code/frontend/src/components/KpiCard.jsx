@@ -26,11 +26,16 @@ const TONE_BADGE = {
 // `compact` renders the value at a smaller size — for KPIs whose value is a
 // short string (e.g. a date) rather than a number, the default 30px
 // `.kpi-value` size reads as oversized.
-export default function KpiCard({ label, value, sublabel, tone = 'primary', icon: Icon, trend, tooltip, compact = false }) {
+// `dense` reduces the card's own padding/internal spacing (see
+// `.metric-card--dense` in index.css) without touching the value's font
+// size — for pages that want a visually lighter card while keeping the
+// number just as readable. Opt-in, so every other `KpiCard` usage is
+// pixel-identical to before.
+export default function KpiCard({ label, value, sublabel, tone = 'primary', icon: Icon, trend, tooltip, compact = false, dense = false }) {
   const TrendIcon = trend?.direction === 'up' ? ArrowUp : ArrowDown;
   return (
-    <div className="metric-card">
-      <div className="flex items-start justify-between mb-1.5">
+    <div className={`metric-card${dense ? ' metric-card--dense' : ''}`}>
+      <div className={`flex items-start justify-between ${dense ? 'mb-1' : 'mb-1.5'}`}>
         <p className="field-label flex items-center gap-1">
           {label}
           {tooltip && (

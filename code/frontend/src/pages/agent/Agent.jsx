@@ -177,7 +177,7 @@ function EvidenceRow({ label, value }) {
   );
 }
 
-function EvidencePreview({ evidence, loading, error, onRetry }) {
+function EvidencePreview({ evidence, loading, error, onRetry, selectedPeriod, forecastType }) {
   return (
     <div className="card mb-6">
       <div className="flex items-center gap-2 mb-1">
@@ -185,7 +185,9 @@ function EvidencePreview({ evidence, loading, error, onRetry }) {
         <h2 className="card-title mb-0">Evidence used for this recommendation</h2>
       </div>
       <p className="text-secondary text-xs mb-4">
-        Recommendations use the latest available forecast for the selected store and forecast type.
+        {selectedPeriod
+          ? `Recommendations use the forecast for ${formatSelectedPeriod(selectedPeriod, forecastType)} — the period selected before opening this page.`
+          : 'Recommendations use the latest available forecast for the selected store and forecast type.'}
       </p>
 
       {loading && <SkeletonTable rows={8} cols={2} />}
@@ -194,7 +196,14 @@ function EvidencePreview({ evidence, loading, error, onRetry }) {
         <AlertBanner variant="error" onRetry={onRetry}>{error}</AlertBanner>
       )}
 
-      {!loading && !error && evidence && (
+      {!loading && !error && evidence?.notAvailable && (
+        <EmptyState
+          title="No evidence available for this period"
+          message={evidence.detail}
+        />
+      )}
+
+      {!loading && !error && evidence && !evidence.notAvailable && (
         <dl className="grid grid-cols-1 sm:grid-cols-2 sm:gap-x-8">
           <EvidenceRow label="Store" value={`Store ${evidence.store_id}`} />
           <EvidenceRow label="Forecast type" value={evidence.forecast_type === 'weekly' ? 'Weekly' : 'Monthly'} />
@@ -217,7 +226,7 @@ function EvidencePreview({ evidence, loading, error, onRetry }) {
         </dl>
       )}
 
-      {!loading && !error && evidence && !evidence.reconciliation_ok && (
+      {!loading && !error && evidence && !evidence.notAvailable && !evidence.reconciliation_ok && (
         <div className="mt-4">
           <AlertBanner variant="warning" onRetry={onRetry}>
             Forecast and SHAP evidence could not be reconciled for this period. Generation is disabled
@@ -259,9 +268,11 @@ function LimitationsDisclosure() {
 
 function GenerationCard({ selectedStore, forecastType, evidence, evidenceLoading, evidenceError, loadingRec, onGenerate }) {
   const canGenerate = !evidenceLoading && !evidenceError && !!evidence?.reconciliation_ok && !loadingRec;
-  const contextLine = evidence
+  const contextLine = evidence && !evidence.notAvailable
     ? `Store ${selectedStore} · ${forecastType === 'weekly' ? 'Weekly' : 'Monthly'} · ${formatSelectedPeriod(evidence.period, evidence.forecast_type)}`
-    : `Store ${selectedStore} · ${forecastType === 'weekly' ? 'Weekly' : 'Monthly'} · loading forecast period…`;
+    : evidence?.notAvailable
+      ? `Store ${selectedStore} · ${forecastType === 'weekly' ? 'Weekly' : 'Monthly'} · evidence unavailable for this period`
+      : `Store ${selectedStore} · ${forecastType === 'weekly' ? 'Weekly' : 'Monthly'} · loading forecast period…`;
 
   return (
     <div className="card mb-6">
@@ -448,23 +459,41 @@ function downloadTextFile(content, filename) {
   URL.revokeObjectURL(url);
 }
 
-export default function Agent({ selectedStore, forecastType, setActivePage }) {
+export default function Agent({ selectedStore, forecastType, setActivePage, handoffPeriod, setHandoffPeriod }) {
   const [result,    setResult]    = useState(null);
   const [loadingRec, setLoadingRec] = useState(false);
   const [recError,  setRecError]  = useState(null);
+  // Seeds from a period handed off by another page (e.g. Dashboard's "Open
+  // AI Recommendations"); null means "use the latest period", exactly as
+  // before this page had any period concept. Consumed once, then cleared so
+  // a later direct Sidebar visit doesn't reuse a stale historical period.
+  // No in-page control changes this once seeded (no Prev/Next on this page,
+  // by design — see the plan) so only the getter is needed.
+  const [selectedPeriod] = useState(() => handoffPeriod || null);
+  useEffect(() => {
+    if (handoffPeriod) setHandoffPeriod?.(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const requestIdRef = useRef(0);
   const { toasts, showToast, dismiss } = useToast();
 
   const {
     data: evidence, loading: evidenceLoading, error: evidenceError, refetch: refetchEvidence,
   } = useApi(
-    () => client.get(`/agent/recommend/evidence?store_id=${selectedStore}&forecast_type=${forecastType}`).then(res => res.data),
-    [selectedStore, forecastType],
+    () => client.get(`/agent/recommend/evidence?store_id=${selectedStore}&forecast_type=${forecastType}${selectedPeriod ? `&period=${selectedPeriod}` : ''}`)
+      .then(res => res.data)
+      .catch(err => {
+        if (err.response?.status === 404) {
+          return { notAvailable: true, detail: err.response?.data?.detail || 'No forecast/SHAP evidence is available for this period.' };
+        }
+        throw err;
+      }),
+    [selectedStore, forecastType, selectedPeriod],
     'Could not load forecast and SHAP evidence for this store.'
   );
 
-  // Store or forecast-type changes invalidate any in-flight request and
-  // clear a prior result — never show a recommendation generated for a
+  // Store, forecast-type or period changes invalidate any in-flight request
+  // and clear a prior result — never show a recommendation generated for a
   // different context than the one currently selected.
   useEffect(() => {
     requestIdRef.current += 1;
@@ -472,14 +501,14 @@ export default function Agent({ selectedStore, forecastType, setActivePage }) {
     setRecError(null);
     setLoadingRec(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedStore, forecastType]);
+  }, [selectedStore, forecastType, selectedPeriod]);
 
   const generate = useCallback(() => {
     if (loadingRec || !evidence?.reconciliation_ok) return;
     const myRequestId = ++requestIdRef.current;
     setLoadingRec(true);
     setRecError(null);
-    client.post(`/agent/recommend?store_id=${selectedStore}&forecast_type=${forecastType}`)
+    client.post(`/agent/recommend?store_id=${selectedStore}&forecast_type=${forecastType}${selectedPeriod ? `&period=${selectedPeriod}` : ''}`)
       .then(res => {
         if (requestIdRef.current !== myRequestId) return; // stale — a newer request/context superseded this one
         setResult(res.data);
@@ -491,7 +520,7 @@ export default function Agent({ selectedStore, forecastType, setActivePage }) {
       .finally(() => {
         if (requestIdRef.current === myRequestId) setLoadingRec(false);
       });
-  }, [selectedStore, forecastType, loadingRec, evidence]);
+  }, [selectedStore, forecastType, selectedPeriod, loadingRec, evidence]);
 
   const handleCopy = () => {
     const text = buildExportText(result, evidence, selectedStore, forecastType);
@@ -513,8 +542,14 @@ export default function Agent({ selectedStore, forecastType, setActivePage }) {
       <PageHeader
         icon={Bot}
         title="AI Recommendations"
-        subtitle="Claude uses the latest XGBoost forecast and its local SHAP explanation to generate decision-support suggestions for staffing, stock and promotions."
-        meta={<span className="badge bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-500/10 dark:text-indigo-400 dark:border-indigo-500/30">Latest forecast only</span>}
+        subtitle={selectedPeriod
+          ? 'Claude uses the selected historical forecast and its local SHAP explanation to generate decision-support suggestions for staffing, stock and promotions.'
+          : 'Claude uses the latest XGBoost forecast and its local SHAP explanation to generate decision-support suggestions for staffing, stock and promotions.'}
+        meta={
+          <span className="badge bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-500/10 dark:text-indigo-400 dark:border-indigo-500/30">
+            {selectedPeriod ? `Historical period: ${formatSelectedPeriod(selectedPeriod, forecastType)}` : 'Latest forecast only'}
+          </span>
+        }
       />
 
       <PipelineNav setActivePage={setActivePage} />
@@ -524,6 +559,8 @@ export default function Agent({ selectedStore, forecastType, setActivePage }) {
         loading={evidenceLoading}
         error={evidenceError}
         onRetry={refetchEvidence}
+        selectedPeriod={selectedPeriod}
+        forecastType={forecastType}
       />
 
       <GenerationCard

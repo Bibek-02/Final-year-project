@@ -409,3 +409,28 @@ test('mobile tick sampling preserves the first and final periods', () => {
   expect(picks.has(12)).toBe(true);
   expect(picks.size).toBe(4);
 });
+
+// ---- Period handoff (e.g. from Dashboard's "View full forecast") ----
+
+test('a handed-off period seeds the selected period immediately, and is consumed once and cleared', async () => {
+  mockHappyPath();
+  const setHandoffPeriod = jest.fn();
+  await renderForecastChart({ handoffPeriod: '2015-05-11', setHandoffPeriod });
+
+  // Seeded directly at mount — no Previous/Next click needed.
+  expect(within(navigatorGroup()).getByText('11 May 2015')).toBeInTheDocument();
+  const row = within(breakdownTable()).getByText('Week beginning 11 May 2015').closest('tr');
+  expect(row).toHaveAttribute('aria-selected', 'true');
+
+  expect(setHandoffPeriod).toHaveBeenCalledWith(null);
+  expect(setHandoffPeriod).toHaveBeenCalledTimes(1);
+});
+
+test('with no handed-off period, the clear callback is never invoked and the latest period is selected as before', async () => {
+  mockHappyPath();
+  const setHandoffPeriod = jest.fn();
+  await renderForecastChart({ setHandoffPeriod });
+
+  expect(within(navigatorGroup()).getByText('18 May 2015')).toBeInTheDocument();
+  expect(setHandoffPeriod).not.toHaveBeenCalled();
+});

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
@@ -428,11 +428,18 @@ function ForecastTooltip({ active, payload, label, forecasts, forecastType, show
 
 // ---- Main page ----
 
-export default function ForecastChart({ selectedStore, forecastType }) {
+export default function ForecastChart({ selectedStore, forecastType, handoffPeriod, setHandoffPeriod }) {
   const cc = useChartColors();
   const isMobile = useIsMobile();
   const [showActual, setShowActual] = useState(false);
-  const [selectedPeriod, setSelectedPeriod] = useState(null);
+  // Seeds from a period handed off by another page (e.g. Dashboard's "View
+  // full forecast"), then behaves as ordinary local state — consumed once,
+  // then cleared so a later direct visit to this page doesn't reuse it.
+  const [selectedPeriod, setSelectedPeriod] = useState(() => handoffPeriod || null);
+  useEffect(() => {
+    if (handoffPeriod) setHandoffPeriod?.(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const { data, loading, error, refetch } = useApi(
     () => client.get(`/forecast/${selectedStore}?forecast_type=${forecastType}`).then(res => res.data.forecasts),

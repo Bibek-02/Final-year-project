@@ -431,3 +431,100 @@ test('the transparency section reports provider, model, prompt version, and huma
   expect(screen.queryByText(/sk-ant/i)).not.toBeInTheDocument();
   expect(screen.queryByText(/ANTHROPIC_API_KEY/i)).not.toBeInTheDocument();
 });
+
+// ---- Period handoff (e.g. from Dashboard's "Open AI Recommendations") ----
+
+test('a handed-off period is included in both the evidence request and the generate request', async () => {
+  mockHappyPath({ evidence: { ...EVIDENCE, period: '2015-07-13' } });
+  client.post.mockResolvedValue({ data: { ...RECOMMENDATION_RESPONSE, period: '2015-07-13' } });
+  await renderAgent({ handoffPeriod: '2015-07-13' });
+
+  expect(client.get).toHaveBeenCalledWith(
+    expect.stringContaining('/agent/recommend/evidence?store_id=1&forecast_type=weekly&period=2015-07-13')
+  );
+
+  await waitFor(() => expect(screen.getByRole('button', { name: /generate ai recommendations/i })).toBeEnabled());
+  await act(async () => {
+    fireEvent.click(screen.getByRole('button', { name: /generate ai recommendations/i }));
+  });
+
+  expect(client.post).toHaveBeenCalledWith('/agent/recommend?store_id=1&forecast_type=weekly&period=2015-07-13');
+});
+
+test('a handed-off period replaces the "Latest forecast only" badge with the specific period', async () => {
+  mockHappyPath({ evidence: { ...EVIDENCE, period: '2015-07-13' } });
+  await renderAgent({ handoffPeriod: '2015-07-13' });
+
+  expect(screen.queryByText('Latest forecast only')).not.toBeInTheDocument();
+  expect(screen.getByText(/Historical period: Week beginning 13 July 2015/)).toBeInTheDocument();
+});
+
+test('with no handed-off period, behaviour is unchanged: no period param, and the "Latest forecast only" badge', async () => {
+  mockHappyPath();
+  await renderAgent();
+
+  expect(client.get).toHaveBeenCalledWith('/agent/recommend/evidence?store_id=1&forecast_type=weekly');
+  expect(screen.getByText('Latest forecast only')).toBeInTheDocument();
+});
+
+test('a handed-off period is consumed once and cleared, so a later direct visit does not reuse it', async () => {
+  mockHappyPath();
+  const setHandoffPeriod = jest.fn();
+  await renderAgent({ handoffPeriod: '2015-07-13', setHandoffPeriod });
+
+  expect(setHandoffPeriod).toHaveBeenCalledWith(null);
+  expect(setHandoffPeriod).toHaveBeenCalledTimes(1);
+});
+
+test('with no handed-off period, the clear callback is never invoked', async () => {
+  mockHappyPath();
+  const setHandoffPeriod = jest.fn();
+  await renderAgent({ setHandoffPeriod });
+
+  expect(setHandoffPeriod).not.toHaveBeenCalled();
+});
+
+test('an unavailable period shows a clear message instead of silently falling back to the latest period', async () => {
+  client.get.mockImplementation((url) => {
+    if (url.startsWith('/agent/recommend/evidence')) {
+      const err = new Error('Not Found');
+      err.response = { status: 404, data: { detail: 'No SHAP explanation available for Store 1 period 2015-01-01.' } };
+      return Promise.reject(err);
+    }
+    return Promise.reject(new Error(`unexpected GET ${url}`));
+  });
+  await renderAgent({ handoffPeriod: '2015-01-01' });
+
+  expect(screen.getByText('No evidence available for this period')).toBeInTheDocument();
+  expect(screen.getByText('No SHAP explanation available for Store 1 period 2015-01-01.')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /generate ai recommendations/i })).toBeDisabled();
+});
+
+test('a slow, superseded request is still correctly invalidated when a specific historical period is in context', async () => {
+  let resolveFirst;
+  mockHappyPath({ evidence: { ...EVIDENCE, period: '2015-07-13' } });
+  client.post.mockImplementation(() => new Promise(res => { resolveFirst = res; }));
+  const { rerender } = await renderAgent({ handoffPeriod: '2015-07-13' });
+  await waitFor(() => expect(screen.getByRole('button', { name: /generate ai recommendations/i })).toBeEnabled());
+
+  await act(async () => {
+    fireEvent.click(screen.getByRole('button', { name: /generate ai recommendations/i }));
+  });
+
+  // Store changes mid-flight — this must invalidate the in-flight request,
+  // exactly as it does with no period in context (see the store/forecast
+  // -type variants of this test above).
+  await act(async () => {
+    rerender(
+      <ThemeProvider>
+        <Agent selectedStore={2} forecastType="weekly" setActivePage={jest.fn()} handoffPeriod="2015-07-13" />
+      </ThemeProvider>
+    );
+  });
+
+  await act(async () => {
+    resolveFirst({ data: { ...RECOMMENDATION_RESPONSE, store_id: 1, period: '2015-07-13' } });
+  });
+
+  expect(screen.queryByText(/Predicted demand is above the model baseline/)).not.toBeInTheDocument();
+});
