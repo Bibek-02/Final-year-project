@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 import {
   Search, TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp,
-  ChevronLeft, ChevronRight, Download, AlertTriangle, Lightbulb, Bot, ArrowRight,
+  ChevronLeft, ChevronRight, Download, AlertTriangle, Lightbulb,
 } from 'lucide-react';
 import client from '../../api/client';
 import { getFeatureLabel } from '../../lib/featureLabels';
@@ -16,6 +16,7 @@ import PageHeader from '../../components/PageHeader';
 import AlertBanner from '../../components/AlertBanner';
 import EmptyState from '../../components/EmptyState';
 import { SkeletonChart } from '../../components/Skeleton';
+import RecommendationsHandoff from '../../components/RecommendationsHandoff';
 
 // ---- Constants ----
 
@@ -1048,47 +1049,6 @@ function BusinessInterpretation({ localExplanation }) {
   );
 }
 
-// Restrained handoff to the separate AI Recommendations page — deliberately
-// flat (no gradient/glow) so it doesn't outweigh the explanation above it.
-// Agent.jsx's /agent/recommend endpoint has no period parameter — it always
-// runs on the store's most recent period, regardless of which historical
-// period is selected here — so the label/note make that mismatch explicit
-// rather than silently sending the user to a different period than the one
-// they were just reading about.
-function RecommendationsHandoff({ onOpen, isLatestPeriod }) {
-  if (!onOpen) return null;
-
-  return (
-    <div className="card mt-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-500/10
-                          flex items-center justify-center flex-shrink-0">
-            <Bot size={18} className="text-indigo-600 dark:text-indigo-400" />
-          </div>
-          <div className="min-w-0">
-            <p className="font-semibold text-gray-800 dark:text-gray-100 text-sm">What should the store consider next?</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-              Open AI Recommendations to review staffing, stock and promotion suggestions based on this forecast and its modelled drivers.
-            </p>
-          </div>
-        </div>
-        <button
-          type="button" onClick={onOpen}
-          className="btn-primary flex items-center gap-1.5 flex-shrink-0 text-sm"
-        >
-          {isLatestPeriod ? 'Open AI Recommendations' : 'Open latest AI Recommendations'} <ArrowRight size={15} />
-        </button>
-      </div>
-      {!isLatestPeriod && (
-        <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700/60">
-          AI Recommendations use the latest available forecast, not the historical period currently selected.
-        </p>
-      )}
-    </div>
-  );
-}
-
 function LocalPanel({
   hidden,
   forecastsLoading, forecastsError, onRetryForecasts,
@@ -1097,12 +1057,11 @@ function LocalPanel({
   localExplanation,
   showAllFeatures, onToggleShowAll,
   highlightedFeature, onHighlight,
-  cc, isMobile, setActivePage,
+  cc, isMobile, setActivePage, setHandoffPeriod,
 }) {
   const [technicalOpen, setTechnicalOpen] = useState(false);
   const anyLoading = forecastsLoading || localLoading;
   const anyError = forecastsError || localError;
-  const isLatestPeriod = forecasts.length > 0 && effectivePeriod === forecasts[forecasts.length - 1].period;
   const retryAll = () => { onRetryForecasts(); onRetryLocal(); };
 
   return (
@@ -1210,8 +1169,7 @@ function LocalPanel({
 
       {!anyLoading && !anyError && localExplanation && !localExplanation.notFound && localExplanation.reconciliationOk && (
         <RecommendationsHandoff
-          onOpen={setActivePage ? () => setActivePage('agent') : undefined}
-          isLatestPeriod={isLatestPeriod}
+          onOpen={setActivePage ? () => { setHandoffPeriod?.(effectivePeriod); setActivePage('agent'); } : undefined}
         />
       )}
     </div>
@@ -1220,12 +1178,20 @@ function LocalPanel({
 
 // ---- Main page ----
 
-export default function Explanation({ selectedStore, forecastType, setActivePage }) {
+export default function Explanation({ selectedStore, forecastType, setActivePage, handoffPeriod, setHandoffPeriod }) {
   const cc = useChartColors();
   const isMobile = useIsMobile();
 
-  const [activeTab, setActiveTab] = useState('overall');
-  const [selectedPeriod, setSelectedPeriod] = useState(null);
+  // A period handed off from another page (e.g. Dashboard's "View full
+  // explanation") seeds both which period is selected and which tab opens —
+  // a handoff implies "show me that period's explanation" — then is
+  // consumed once and cleared so a later direct visit doesn't reuse it.
+  const [activeTab, setActiveTab] = useState(() => (handoffPeriod ? 'selected' : 'overall'));
+  const [selectedPeriod, setSelectedPeriod] = useState(() => handoffPeriod || null);
+  useEffect(() => {
+    if (handoffPeriod) setHandoffPeriod?.(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [showAllFeatures, setShowAllFeatures] = useState(false);
   const [highlightedFeature, setHighlightedFeature] = useState(null);
 
@@ -1323,7 +1289,7 @@ export default function Explanation({ selectedStore, forecastType, setActivePage
         localExplanation={localExplanation}
         showAllFeatures={showAllFeatures} onToggleShowAll={() => setShowAllFeatures(s => !s)}
         highlightedFeature={highlightedFeature} onHighlight={handleHighlight}
-        setActivePage={setActivePage}
+        setActivePage={setActivePage} setHandoffPeriod={setHandoffPeriod}
         cc={cc} isMobile={isMobile}
       />
     </div>
