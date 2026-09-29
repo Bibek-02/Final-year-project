@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 import {
   Search, TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp,
-  ChevronLeft, ChevronRight, Download, AlertTriangle, Lightbulb,
+  ChevronLeft, ChevronRight, Download, AlertTriangle, Lightbulb, Info,
 } from 'lucide-react';
 import client from '../../api/client';
 import { getFeatureLabel } from '../../lib/featureLabels';
@@ -289,7 +289,7 @@ export function buildWaterfall(localExplanation) {
     const start = cumulative;
     cumulative += c.shapValue;
     rows.push({
-      name: c.label, rawFeature: c.rawFeature,
+      name: c.label, rawFeature: c.rawFeature, featureValue: c.featureValue,
       low: Math.min(start, cumulative), high: Math.max(start, cumulative),
       display: c.shapValue, positive: c.shapValue >= 0,
     });
@@ -310,8 +310,23 @@ export function buildWaterfall(localExplanation) {
   return rows.map(r => ({ ...r, base: r.low, range: r.high - r.low }));
 }
 
-// CSV export (technical details) 
-// csvEscape/downloadCsv, duplicated per this codebase's convention. 
+// Tells the reader whether the waterfall above shows every modelled feature
+// individually or only the strongest displayed ones (with the remainder
+// folded into the "Other" bar) — never implies completeness when
+// contributions were actually grouped.
+export function buildWaterfallScopeNote(contributions) {
+  const total = contributions.length;
+  const shown = Math.min(TOP_N_WATERFALL, total);
+  const remaining = total - shown;
+  if (remaining <= 0) {
+    return `This chart shows all ${total} modelled feature${total === 1 ? '' : 's'} individually.`;
+  }
+  return `This chart shows the ${shown} strongest displayed contributions individually; `
+    + `the remaining ${remaining} feature${remaining === 1 ? '' : 's'} are grouped into the "Other" total.`;
+}
+
+// CSV export (technical details)
+// csvEscape/downloadCsv, duplicated per this codebase's convention.
 
 function csvEscape(value) {
   const str = String(value);
@@ -341,9 +356,24 @@ function buildTechnicalCsv(localExplanation) {
   return lines.join('\n');
 }
 
-// ---- About SHAP card ----
+// Direction wording mirrors Dashboard.jsx's own local-SHAP panel convention
+// ("Raises prediction" / "Lowers prediction"), derived directly from the
+// SHAP value's sign rather than the backend's Effect string.
+function directionInfo(shapValue) {
+  if (shapValue > 0) return { Icon: TrendingUp, text: 'Raises prediction' };
+  if (shapValue < 0) return { Icon: TrendingDown, text: 'Lowers prediction' };
+  return { Icon: Minus, text: 'No effect on this prediction' };
+}
 
-function AboutShapCard() {
+// ---- About SHAP disclosure ----
+
+// Collapsed by default so the page opens on the guided explanation itself,
+// not a standing introduction — matches Dashboard.jsx's own "About this
+// analysis" controlled-disclosure convention (explicit React state, not the
+// browser's native <details> default-open behaviour), and works the same
+// way at every breakpoint instead of duplicating desktop/mobile markup.
+function AboutShapDisclosure() {
+  const [open, setOpen] = useState(false);
   const concepts = [
     { title: 'Overall model', tone: 'default',
       text: 'Shows which features generally have the greatest influence across the sampled held-out observations.' },
@@ -354,40 +384,90 @@ function AboutShapCard() {
   ];
 
   return (
-    <div className="card mb-6">
-      <h2 className="card-title mb-1">Understanding SHAP explanations</h2>
-      <p className="text-secondary text-xs mb-3">
-        SHAP estimates how features influence model predictions at two levels: overall model
-        behaviour and one selected forecast.
-      </p>
+    <div className="rounded-2xl border border-gray-100 dark:border-gray-700/60 bg-gray-50/60
+                    dark:bg-gray-800/40 px-5 py-3 mb-6">
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        aria-expanded={open}
+        className="w-full flex items-center justify-between gap-2 min-h-[44px] text-sm font-semibold
+                   text-gray-700 dark:text-gray-200 focus:outline-none focus-visible:ring-2
+                   focus-visible:ring-indigo-400 rounded"
+      >
+        <span className="flex items-center gap-2">
+          <Info size={14} className="text-indigo-500 dark:text-indigo-400 flex-shrink-0" aria-hidden="true" />
+          What do these SHAP explanations show?
+        </span>
+        {open
+          ? <ChevronUp size={16} className="text-gray-400 dark:text-gray-500 flex-shrink-0" aria-hidden="true" />
+          : <ChevronDown size={16} className="text-gray-400 dark:text-gray-500 flex-shrink-0" aria-hidden="true" />}
+      </button>
 
-      <dl className="hidden sm:grid sm:grid-cols-3 gap-4 text-xs">
-        {concepts.map(c => (
-          <div key={c.title}>
-            <dt className={`font-semibold mb-1 ${c.tone === 'warning' ? 'text-amber-700 dark:text-amber-400' : 'text-gray-700 dark:text-gray-200'}`}>
-              {c.title}
-            </dt>
-            <dd className="text-secondary">{c.text}</dd>
-          </div>
-        ))}
-      </dl>
+      {open && (
+        <div className="mt-3 text-xs space-y-3 animate-fadeIn">
+          <p className="text-secondary">
+            SHAP estimates how features influence model predictions at two levels: overall model
+            behaviour and one selected forecast.
+          </p>
+          <dl className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {concepts.map(c => (
+              <div key={c.title}>
+                <dt className={`font-semibold mb-1 ${c.tone === 'warning' ? 'text-amber-700 dark:text-amber-400' : 'text-gray-700 dark:text-gray-200'}`}>
+                  {c.title}
+                </dt>
+                <dd className="text-secondary">{c.text}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      )}
+    </div>
+  );
+}
 
-      <details className="sm:hidden mt-1 text-xs">
-        <summary className="cursor-pointer font-semibold text-indigo-600 dark:text-indigo-400
-                             focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 rounded">
-          How to understand SHAP
-        </summary>
-        <dl className="mt-2 space-y-2">
-          {concepts.map(c => (
-            <div key={c.title}>
-              <dt className={`font-semibold ${c.tone === 'warning' ? 'text-amber-700 dark:text-amber-400' : 'text-gray-700 dark:text-gray-200'}`}>
-                {c.title}
-              </dt>
-              <dd className="text-secondary">{c.text}</dd>
-            </div>
-          ))}
-        </dl>
-      </details>
+// ---- Selected context strip ----
+
+// Compact, page-level "what are we explaining" strip — visible above both
+// tabs (not just the Selected-forecast one) so store/frequency/period stay
+// oriented even while viewing Overall model importance. Deliberately a slim
+// label/value row rather than a KpiCard grid, so it never reads as another
+// Dashboard KPI section. Actual sales and feature count only ever appear
+// when the already-loaded data actually has them.
+function SelectedContextStrip({ selectedStore, forecastType, effectivePeriod, forecasts, forecastsLoading, localExplanation }) {
+  const row = (forecasts || []).find(f => f.period === effectivePeriod);
+  const hasPeriod = !!effectivePeriod && !!row;
+  const hasFeatureCount = !!localExplanation && !localExplanation.notFound && localExplanation.reconciliationOk;
+
+  const items = [
+    { key: 'store', label: 'Store', value: `Store ${selectedStore}` },
+    { key: 'freq', label: 'Frequency', value: forecastType === 'weekly' ? 'Weekly' : 'Monthly' },
+    {
+      key: 'period', label: 'Selected period',
+      value: hasPeriod ? formatSelectedPeriod(effectivePeriod, forecastType) : (forecastsLoading ? 'Loading…' : 'Unavailable'),
+    },
+    { key: 'predicted', label: 'Predicted sales', value: hasPeriod ? formatRounded(row.prediction) : '—' },
+  ];
+  if (hasPeriod && row.actual_sales != null) {
+    items.push({ key: 'actual', label: 'Actual sales', value: formatRounded(row.actual_sales) });
+  }
+  if (hasFeatureCount) {
+    items.push({ key: 'features', label: 'Features used', value: String(localExplanation.totalFeatureCount) });
+  }
+
+  return (
+    <div
+      role="group"
+      aria-label="Selected forecast context"
+      className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs rounded-xl border
+                 border-gray-100 dark:border-gray-700/60 bg-gray-50/60 dark:bg-gray-800/40
+                 px-4 py-2.5 mb-6"
+    >
+      {items.map(item => (
+        <div key={item.key} className="flex items-baseline gap-1.5">
+          <span className="text-gray-500 dark:text-gray-400">{item.label}</span>
+          <span className="font-semibold text-gray-800 dark:text-gray-100 tabular-nums">{item.value}</span>
+        </div>
+      ))}
     </div>
   );
 }
@@ -395,7 +475,7 @@ function AboutShapCard() {
 // ---- Tabs ----
 
 const TABS = [
-  { id: 'overall', label: 'Overall model' },
+  { id: 'overall', label: 'Overall model importance' },
   { id: 'selected', label: 'Selected forecast' },
 ];
 
@@ -544,19 +624,26 @@ function GlobalRankedTable({ rows }) {
   );
 }
 
-function GlobalPanel({ hidden, loading, error, rows, forecastType, cc, isMobile, onRetry }) {
+function GlobalPanel({ hidden, loading, error, rows, forecastType, totalFeatureCount, cc, isMobile, onRetry }) {
   const scopeLabel = forecastType === 'weekly' ? 'Weekly' : 'Monthly';
 
   return (
     <div id="panel-overall" role="tabpanel" aria-labelledby="tab-overall" hidden={hidden}>
       <div className="card mb-6">
-        <h2 className="card-title mb-2">What influences the {forecastType} model overall?</h2>
+        <h2 className="card-title mb-1">Overall model importance</h2>
+        <p className="text-secondary text-xs mb-3">
+          This shows average absolute SHAP impact across the loaded held-out explanation records. It is not
+          the explanation for one selected store and period.
+        </p>
 
         <div className="flex flex-wrap gap-2 mb-3">
           <span className="badge bg-indigo-100 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-400">{scopeLabel}</span>
           <span className="badge bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">Model-level explanation</span>
           <span className="badge bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">1,000 sampled test observations</span>
           <span className="badge bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">Precomputed SHAP</span>
+          {totalFeatureCount != null && (
+            <span className="badge bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">{totalFeatureCount} modelled features</span>
+          )}
         </div>
 
         <p className="text-secondary text-xs mb-1">
@@ -638,15 +725,6 @@ function LocalPeriodNavigator({ forecasts, effectivePeriod, forecastType, onSele
   );
 }
 
-function LocalContextLine({ localExplanation }) {
-  return (
-    <p className="text-secondary text-xs mb-4">
-      Store {localExplanation.store} · {formatSelectedPeriod(localExplanation.period, localExplanation.forecastType)} · Predicted sales:{' '}
-      <span className="font-semibold text-gray-700 dark:text-gray-200">{formatRounded(localExplanation.predictedSales)}</span>
-    </p>
-  );
-}
-
 function LocalSummaryBox({ localExplanation }) {
   const { baseline, sumShap, predictedSales, contributions } = localExplanation;
   const { increase, decrease } = getTopDrivers(contributions);
@@ -698,11 +776,11 @@ function WaterfallLegend({ cc }) {
     <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400 mt-3 flex-wrap">
       <span className="flex items-center gap-1.5">
         <span className="w-3 h-3 rounded-sm inline-block flex-shrink-0" style={{ backgroundColor: cc.chart.positive }} />
-        Increases prediction
+        Raises prediction
       </span>
       <span className="flex items-center gap-1.5">
         <span className="w-3 h-3 rounded-sm inline-block flex-shrink-0" style={{ backgroundColor: cc.chart.negative }} />
-        Decreases prediction
+        Lowers prediction
       </span>
       <span className="flex items-center gap-1.5">
         <span className="w-3 h-3 rounded-sm inline-block flex-shrink-0" style={{ backgroundColor: NEUTRAL }} />
@@ -753,6 +831,38 @@ function WaterfallBarShape({ x, y, width, height, payload, cc, highlightedFeatur
   );
 }
 
+// Custom tooltip content (replaces Recharts' default formatter/labelFormatter
+// combo) so every row can show the readable label, technical feature name,
+// recorded value and direction together — not just the contribution number.
+function WaterfallTooltip({ active, payload }) {
+  if (!active || !payload?.length) return null;
+  const row = payload[0].payload;
+  const contributor = !row.isTotal && !row.isOther;
+  const direction = contributor ? directionInfo(row.display) : null;
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700
+                    shadow-lg px-4 py-3 text-xs max-w-[260px]">
+      <p className="font-semibold text-gray-700 dark:text-gray-200">{row.name}</p>
+      {row.rawFeature && (
+        <p className="text-gray-400 dark:text-gray-500 text-[11px] font-mono mt-0.5 break-all">{row.rawFeature}</p>
+      )}
+      {row.featureValue != null && (
+        <p className="text-gray-600 dark:text-gray-300 mt-1.5">
+          Recorded value: <span className="font-semibold">{formatFeatureValue(row.rawFeature, row.featureValue)}</span>
+        </p>
+      )}
+      <p className="text-gray-600 dark:text-gray-300 mt-1">
+        {row.isTotal ? 'Value' : 'Effect on predicted sales'}:{' '}
+        <span className="font-semibold">
+          {row.isTotal ? formatRounded(row.display) : `${formatSignedRounded(row.display)} predicted sales`}
+        </span>
+      </p>
+      {direction && <p className="text-gray-500 dark:text-gray-400 mt-1">{direction.text}</p>}
+    </div>
+  );
+}
+
 function LocalWaterfallChart({ waterfallRows, cc, isMobile, highlightedFeature, onHighlight }) {
   const labelColWidth = isMobile ? 92 : 190;
   const chartMarginL  = isMobile ? 96 : 195;
@@ -767,17 +877,7 @@ function LocalWaterfallChart({ waterfallRows, cc, isMobile, highlightedFeature, 
                  tickFormatter={v => formatRounded(v)} />
           <YAxis type="category" dataKey="name" tickFormatter={n => truncate(n, labelMaxChars)}
                  tick={{ fontSize: 11, fill: cc.axisLabel }} width={labelColWidth} />
-          <Tooltip
-            formatter={(v, n, p) => {
-              const row = p.payload;
-              const text = row.isTotal ? formatRounded(row.display) : `${formatSignedRounded(row.display)} predicted sales`;
-              return [text, row.isTotal ? 'Value' : 'Contribution'];
-            }}
-            labelFormatter={l => l}
-            contentStyle={{ borderRadius: '12px', border: `1px solid ${cc.tooltip.border}`,
-                            background: cc.tooltip.background, color: cc.tooltip.text,
-                            fontSize: '13px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
-          />
+          <Tooltip content={<WaterfallTooltip />} />
           <Bar dataKey="base" stackId="w" fill="transparent" isAnimationActive={false} />
           <Bar
             dataKey="range" stackId="w" isAnimationActive={false}
@@ -822,6 +922,11 @@ function LocalStackedCards({ waterfallRows, highlightedFeature, onHighlight }) {
                 {row.isTotal ? formatRounded(row.display) : formatSignedRounded(row.display)}
               </span>
             </div>
+            {row.featureValue != null && (
+              <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
+                Recorded: {formatFeatureValue(row.rawFeature, row.featureValue)}
+              </p>
+            )}
             {!row.isTotal && (
               <div className="h-1.5 mt-1.5 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
                 <div className={`h-full rounded-full ${row.positive ? 'bg-indigo-500' : 'bg-red-400'}`}
@@ -858,14 +963,8 @@ function LocalStackedCards({ waterfallRows, highlightedFeature, onHighlight }) {
   );
 }
 
-function DirectionInfo(effect) {
-  if (effect === 'Increases prediction') return { Icon: TrendingUp, text: 'Increases' };
-  if (effect === 'Decreases prediction') return { Icon: TrendingDown, text: 'Decreases' };
-  return { Icon: Minus, text: 'No effect' };
-}
-
 function TechnicalRow({ contribution, isHighlighted, onSelect }) {
-  const { Icon, text } = DirectionInfo(contribution.effect);
+  const { Icon, text } = directionInfo(contribution.shapValue);
   const dirClass = contribution.shapValue > 0
     ? 'bg-indigo-50 text-semantic-positive dark:bg-indigo-500/10 dark:text-indigo-400'
     : contribution.shapValue < 0
@@ -882,6 +981,7 @@ function TechnicalRow({ contribution, isHighlighted, onSelect }) {
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(contribution.rawFeature); } }}
     >
       <td className="px-4 py-2.5 font-medium text-gray-700 dark:text-gray-300 text-xs">{contribution.label}</td>
+      <td className="px-4 py-2.5 text-gray-400 dark:text-gray-500 text-[11px] font-mono break-all">{contribution.rawFeature}</td>
       <td className="px-4 py-2.5 text-right text-gray-500 dark:text-gray-400 text-xs tabular-nums">
         {formatFeatureValue(contribution.rawFeature, contribution.featureValue)}
       </td>
@@ -901,7 +1001,7 @@ function TechnicalRow({ contribution, isHighlighted, onSelect }) {
 }
 
 function TechnicalCard({ contribution, isHighlighted, onSelect }) {
-  const { text } = DirectionInfo(contribution.effect);
+  const { text } = directionInfo(contribution.shapValue);
   return (
     <button
       type="button" onClick={() => onSelect(contribution.rawFeature)}
@@ -912,8 +1012,9 @@ function TechnicalCard({ contribution, isHighlighted, onSelect }) {
       }`}
     >
       <p className="text-xs font-semibold text-gray-700 dark:text-gray-200">{contribution.label}</p>
-      <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
-        Observed: {formatFeatureValue(contribution.rawFeature, contribution.featureValue)}
+      <p className="text-[10px] text-gray-400 dark:text-gray-500 font-mono break-all mt-0.5">{contribution.rawFeature}</p>
+      <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
+        Recorded: {formatFeatureValue(contribution.rawFeature, contribution.featureValue)}
       </p>
       <div className="flex items-center justify-between mt-1">
         <span className={`text-xs font-bold tabular-nums ${
@@ -937,7 +1038,8 @@ function TechnicalDetailsTable({ contributions, totalFeatureCount, showAll, onTo
           <thead>
             <tr className="table-header">
               <th scope="col" className="px-4 py-2 text-left rounded-l-xl">Feature</th>
-              <th scope="col" className="px-4 py-2 text-right">Observed value</th>
+              <th scope="col" className="px-4 py-2 text-left">Technical name</th>
+              <th scope="col" className="px-4 py-2 text-right">Recorded value</th>
               <th scope="col" className="px-4 py-2 text-right">Effect on predicted sales</th>
               <th scope="col" className="px-4 py-2 text-left rounded-r-xl">Direction</th>
             </tr>
@@ -1030,7 +1132,7 @@ function ReconciliationFailure({ onRetry }) {
 // Plain-language synthesis of the selected forecast — a deterministic
 // interpretation of the SHAP evidence already on screen, not an AI-generated
 // recommendation (those stay on the separate AI Recommendations page).
-function BusinessInterpretation({ localExplanation }) {
+function PlainLanguageInterpretation({ localExplanation }) {
   const text = buildBusinessInterpretation(localExplanation);
   if (!text) return null;
 
@@ -1039,11 +1141,18 @@ function BusinessInterpretation({ localExplanation }) {
                     dark:bg-indigo-500/15 dark:border-indigo-500/40">
       <div className="flex items-center gap-2 mb-2">
         <Lightbulb size={16} className="text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
-        <h3 className="text-sm font-semibold text-indigo-800 dark:text-indigo-300">Business interpretation</h3>
+        <h3 className="text-sm font-semibold text-indigo-800 dark:text-indigo-300">Plain-language interpretation</h3>
       </div>
+      <p className="text-indigo-700/80 dark:text-indigo-300/80 text-xs mb-2">
+        Based on the selected local SHAP evidence above, this suggests how the modelled inputs contributed
+        to the model's output for this forecast.
+      </p>
       <p className="text-indigo-900 dark:text-indigo-100 text-sm leading-relaxed">{text}</p>
       <p className="text-indigo-700/70 dark:text-indigo-300/70 text-[11px] mt-2 italic">
         This is a model interpretation of the forecast, not a business recommendation.
+      </p>
+      <p className="text-indigo-700/70 dark:text-indigo-300/70 text-[11px] mt-1 italic">
+        This interpretation is derived from model explanation data and is not a human-participant evaluation.
       </p>
     </div>
   );
@@ -1053,21 +1162,37 @@ function LocalPanel({
   hidden,
   forecastsLoading, forecastsError, onRetryForecasts,
   localLoading, localError, onRetryLocal,
-  forecasts, effectivePeriod, forecastType, onPeriodSelect,
+  forecasts, effectivePeriod, requestedPeriod, forecastType, onPeriodSelect,
   localExplanation,
   showAllFeatures, onToggleShowAll,
   highlightedFeature, onHighlight,
-  cc, isMobile, setActivePage, setHandoffPeriod,
+  cc, isMobile, setActivePage, setHandoffPeriod, onSwitchToOverall,
 }) {
   const [technicalOpen, setTechnicalOpen] = useState(false);
   const anyLoading = forecastsLoading || localLoading;
   const anyError = forecastsError || localError;
   const retryAll = () => { onRetryForecasts(); onRetryLocal(); };
+  // A handoff (or a stale Previous/Next selection) that names a period not
+  // present for the current store/forecast type falls back to the latest
+  // available one — this notice makes that fallback visible instead of
+  // silently substituting a different period than the one asked for.
+  const requestedUnavailable = !!requestedPeriod && !!effectivePeriod && requestedPeriod !== effectivePeriod;
+  const fullyLoaded = !anyLoading && !anyError && localExplanation && !localExplanation.notFound && localExplanation.reconciliationOk;
 
   return (
     <div id="panel-selected" role="tabpanel" aria-labelledby="tab-selected" hidden={hidden}>
       <div className="card mb-6">
-        <h2 className="card-title mb-1">Why this specific forecast?</h2>
+        <h2 className="card-title mb-1">Why this forecast?</h2>
+        <p className="text-secondary text-xs">
+          These SHAP values show which inputs raised or lowered this prediction compared with the model baseline.
+        </p>
+
+        {requestedUnavailable && (
+          <p className="badge bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400 mt-2 whitespace-normal text-left">
+            The requested period isn't available for this store and forecast type — showing{' '}
+            {formatShortPeriod(effectivePeriod, forecastType)} instead.
+          </p>
+        )}
 
         {!anyLoading && !anyError && forecasts.length > 0 && (
           <LocalPeriodNavigator
@@ -1101,10 +1226,13 @@ function LocalPanel({
             <ReconciliationFailure onRetry={retryAll} />
           )}
 
-          {!anyLoading && !anyError && localExplanation && !localExplanation.notFound && localExplanation.reconciliationOk && (
+          {fullyLoaded && (
             <>
-              <LocalContextLine localExplanation={localExplanation} />
               <LocalSummaryBox localExplanation={localExplanation} />
+
+              <p className="text-secondary text-xs mb-3">
+                {buildWaterfallScopeNote(localExplanation.contributions)}
+              </p>
 
               <div className="hidden md:block">
                 <LocalWaterfallChart
@@ -1119,58 +1247,83 @@ function LocalPanel({
                   highlightedFeature={highlightedFeature} onHighlight={onHighlight}
                 />
               </div>
-
-              <BusinessInterpretation localExplanation={localExplanation} />
-
-              {/* Driven explicitly via React state rather than relying on the
-                  browser's default <summary> click activation, so the open
-                  state and the "Show/Hide" label always agree. */}
-              <details className="mt-5" open={technicalOpen}>
-                <summary
-                  onClick={(e) => { e.preventDefault(); setTechnicalOpen(o => !o); }}
-                  className="cursor-pointer flex items-center gap-1.5 text-xs font-semibold text-indigo-600
-                             hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300
-                             focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 rounded"
-                >
-                  {technicalOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                  {technicalOpen ? 'Hide technical details' : 'Show technical details'}
-                </summary>
-
-                <div className="mt-4 animate-fadeIn">
-                  <div className="flex justify-end mb-2">
-                    <button
-                      type="button"
-                      onClick={() => downloadCsv(
-                        buildTechnicalCsv(localExplanation),
-                        `shap_local_store${localExplanation.store}_${localExplanation.period}.csv`
-                      )}
-                      className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400
-                                 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400
-                                 rounded min-h-[44px] px-2"
-                    >
-                      <Download size={14} aria-hidden="true" /> Download technical details (CSV)
-                    </button>
-                  </div>
-
-                  <TechnicalDetailsTable
-                    contributions={localExplanation.contributions}
-                    totalFeatureCount={localExplanation.totalFeatureCount}
-                    showAll={showAllFeatures} onToggleShowAll={onToggleShowAll}
-                    highlightedFeature={highlightedFeature} onHighlight={onHighlight}
-                  />
-
-                  <TechnicalMetadata localExplanation={localExplanation} />
-                </div>
-              </details>
             </>
           )}
         </div>
       </div>
 
-      {!anyLoading && !anyError && localExplanation && !localExplanation.notFound && localExplanation.reconciliationOk && (
-        <RecommendationsHandoff
-          onOpen={setActivePage ? () => { setHandoffPeriod?.(effectivePeriod); setActivePage('agent'); } : undefined}
-        />
+      {fullyLoaded && (
+        <>
+          <div className="card mb-6">
+            <h2 className="card-title mb-1">Inputs behind this prediction</h2>
+            <p className="text-secondary text-xs mb-4">
+              Recorded value is what was actually observed for this period. Effect on predicted sales is how
+              much that input moved the prediction away from the baseline — shown as separate columns so
+              the two are never mistaken for one another.
+            </p>
+
+            <TechnicalDetailsTable
+              contributions={localExplanation.contributions}
+              totalFeatureCount={localExplanation.totalFeatureCount}
+              showAll={showAllFeatures} onToggleShowAll={onToggleShowAll}
+              highlightedFeature={highlightedFeature} onHighlight={onHighlight}
+            />
+
+            {/* Driven explicitly via React state rather than relying on the
+                browser's default <summary> click activation, so the open
+                state and the "Show/Hide" label always agree. */}
+            <details className="mt-5" open={technicalOpen}>
+              <summary
+                onClick={(e) => { e.preventDefault(); setTechnicalOpen(o => !o); }}
+                className="cursor-pointer flex items-center gap-1.5 text-xs font-semibold text-indigo-600
+                           hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300
+                           focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 rounded"
+              >
+                {technicalOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                {technicalOpen ? 'Hide technical metadata' : 'Show technical metadata'}
+              </summary>
+
+              <div className="mt-4 animate-fadeIn">
+                <div className="flex justify-end mb-2">
+                  <button
+                    type="button"
+                    onClick={() => downloadCsv(
+                      buildTechnicalCsv(localExplanation),
+                      `shap_local_store${localExplanation.store}_${localExplanation.period}.csv`
+                    )}
+                    className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400
+                               hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400
+                               rounded min-h-[44px] px-2"
+                  >
+                    <Download size={14} aria-hidden="true" /> Download technical details (CSV)
+                  </button>
+                </div>
+
+                <TechnicalMetadata localExplanation={localExplanation} />
+              </div>
+            </details>
+          </div>
+
+          <PlainLanguageInterpretation localExplanation={localExplanation} />
+
+          {onSwitchToOverall && (
+            <button
+              type="button"
+              onClick={onSwitchToOverall}
+              className="mt-3 mb-6 block text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline
+                         focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 rounded
+                         min-h-[44px] px-1 -ml-1"
+            >
+              How does this compare with overall model importance? →
+            </button>
+          )}
+
+          <RecommendationsHandoff
+            title="Next step: recommendations"
+            description="Use this explanation as evidence for AI-generated retail recommendations."
+            onOpen={setActivePage ? () => { setHandoffPeriod?.(effectivePeriod); setActivePage('agent'); } : undefined}
+          />
+        </>
       )}
     </div>
   );
@@ -1182,11 +1335,13 @@ export default function Explanation({ selectedStore, forecastType, setActivePage
   const cc = useChartColors();
   const isMobile = useIsMobile();
 
+  // Always opens on the guided walkthrough for one prediction — "Overall
+  // model importance" is reachable via the tab (or the in-page link below
+  // the interpretation) but is no longer the first thing a reader sees.
+  const [activeTab, setActiveTab] = useState('selected');
   // A period handed off from another page (e.g. Dashboard's "View full
-  // explanation") seeds both which period is selected and which tab opens —
-  // a handoff implies "show me that period's explanation" — then is
-  // consumed once and cleared so a later direct visit doesn't reuse it.
-  const [activeTab, setActiveTab] = useState(() => (handoffPeriod ? 'selected' : 'overall'));
+  // explanation") seeds which period is selected — consumed once, then
+  // cleared so a later direct visit doesn't reuse it.
   const [selectedPeriod, setSelectedPeriod] = useState(() => handoffPeriod || null);
   useEffect(() => {
     if (handoffPeriod) setHandoffPeriod?.(null);
@@ -1262,34 +1417,50 @@ export default function Explanation({ selectedStore, forecastType, setActivePage
     }
   }, [localExplanation]);
 
+  // The global tab's "feature count if available" reuses the currently
+  // loaded local explanation's own record count rather than issuing a
+  // separate metadata fetch — both describe the same underlying modelled
+  // feature set, and this stays honestly absent until real data has loaded.
+  const globalFeatureCount = (localExplanation && !localExplanation.notFound && localExplanation.reconciliationOk)
+    ? localExplanation.totalFeatureCount
+    : null;
+
   return (
     <div className="animate-fadeIn">
       <PageHeader
         icon={Search}
         title="Forecast Explanation"
-        subtitle="Understand what influences the model overall, why it produced a selected forecast, and what that forecast means for the business."
+        subtitle="Understand why the selected historical prediction was produced."
       />
 
-      <AboutShapCard />
+      <SelectedContextStrip
+        selectedStore={selectedStore} forecastType={forecastType}
+        effectivePeriod={effectivePeriod} forecasts={forecasts} forecastsLoading={forecastsLoading}
+        localExplanation={localExplanation}
+      />
+
+      <AboutShapDisclosure />
 
       <ExplanationTabs activeTab={activeTab} onChange={setActiveTab} />
 
       <GlobalPanel
         hidden={activeTab !== 'overall'}
         loading={globalLoading} error={globalError} rows={globalRows}
-        forecastType={forecastType} cc={cc} isMobile={isMobile} onRetry={refetchGlobal}
+        forecastType={forecastType} totalFeatureCount={globalFeatureCount}
+        cc={cc} isMobile={isMobile} onRetry={refetchGlobal}
       />
 
       <LocalPanel
         hidden={activeTab !== 'selected'}
         forecastsLoading={forecastsLoading} forecastsError={forecastsError} onRetryForecasts={refetchForecasts}
         localLoading={localLoading} localError={localError} onRetryLocal={refetchLocal}
-        forecasts={forecasts} effectivePeriod={effectivePeriod} forecastType={forecastType}
+        forecasts={forecasts} effectivePeriod={effectivePeriod} requestedPeriod={selectedPeriod} forecastType={forecastType}
         onPeriodSelect={setSelectedPeriod}
         localExplanation={localExplanation}
         showAllFeatures={showAllFeatures} onToggleShowAll={() => setShowAllFeatures(s => !s)}
         highlightedFeature={highlightedFeature} onHighlight={handleHighlight}
         setActivePage={setActivePage} setHandoffPeriod={setHandoffPeriod}
+        onSwitchToOverall={() => setActiveTab('overall')}
         cc={cc} isMobile={isMobile}
       />
     </div>

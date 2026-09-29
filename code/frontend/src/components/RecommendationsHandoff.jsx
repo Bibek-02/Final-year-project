@@ -1,7 +1,12 @@
 import React from 'react';
 import { Bot, ArrowRight } from 'lucide-react';
 
-export default function RecommendationsHandoff({ onOpen }) {
+export default function RecommendationsHandoff({
+  onOpen,
+  title = 'What should the store consider next?',
+  description = 'Open AI Recommendations to review staffing, stock and promotion suggestions based on '
+    + 'this forecast and its modelled drivers.',
+}) {
   if (!onOpen) return null;
 
   return (
@@ -14,11 +19,10 @@ export default function RecommendationsHandoff({ onOpen }) {
           </div>
           <div className="min-w-0">
             <p className="font-semibold text-gray-800 dark:text-gray-100 text-sm">
-              What should the store consider next?
+              {title}
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-              Open AI Recommendations to review staffing, stock and promotion suggestions based on
-              this forecast and its modelled drivers.
+              {description}
             </p>
           </div>
         </div>

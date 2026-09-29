@@ -4,7 +4,7 @@ import '@testing-library/jest-dom';
 import Explanation, {
   formatShortPeriod, formatSelectedPeriod, formatFeatureValue, formatShapContribution,
   normalizeGlobalRows, buildGlobalShapSummary, buildLocalExplanation, getTopDrivers,
-  buildLocalShapSummary, buildWaterfall, buildBusinessInterpretation,
+  buildLocalShapSummary, buildWaterfall, buildWaterfallScopeNote, buildBusinessInterpretation,
 } from '../pages/explain/Explanation';
 import { ThemeProvider } from '../context/ThemeContext';
 import client from '../api/client';
@@ -248,19 +248,41 @@ describe('buildWaterfall', () => {
     expect(Math.round(rows[rows.length - 1].display)).toBe(26872);
   });
 
-  test('shows exactly the top 6 named contributors', () => {
+  test('shows exactly the top 6 named contributors, each carrying its recorded feature value', () => {
     const named = rows.filter(r => !r.isTotal && !r.isOther);
     expect(named).toHaveLength(6);
     expect(named[0].rawFeature).toBe('rolling_mean_12');
     expect(Math.round(named[0].display)).toBe(-5085);
+    expect(named[0].featureValue).toBe(25372);
     expect(named[1].rawFeature).toBe('PromoDays');
     expect(Math.round(named[1].display)).toBe(4476);
+    expect(named[1].featureValue).toBe(5);
   });
 
   test('folds the remaining features into a dynamically-labeled "Other N" step, N = total - 6', () => {
     const other = rows.find(r => r.isOther);
     expect(other.name).toBe('Other 14 features (net)');
     expect(Math.round(other.display)).toBe(-6860);
+  });
+});
+
+describe('buildWaterfallScopeNote', () => {
+  test('states the chart shows the strongest displayed contributions when features are grouped', () => {
+    const localExplanation = buildLocalExplanation({
+      localData: LOCAL_SHAP_RESPONSE, forecasts: WEEKLY_FORECASTS, selectedStore: 1, forecastType: 'weekly',
+    });
+    expect(buildWaterfallScopeNote(localExplanation.contributions)).toBe(
+      'This chart shows the 6 strongest displayed contributions individually; '
+      + 'the remaining 14 features are grouped into the "Other" total.'
+    );
+  });
+
+  test('states every feature is shown individually when there is nothing left to group', () => {
+    const fewContributions = [
+      { rawFeature: 'PromoDays', shapValue: 100 },
+      { rawFeature: 'OpenDays', shapValue: -50 },
+    ];
+    expect(buildWaterfallScopeNote(fewContributions)).toBe('This chart shows all 2 modelled features individually.');
   });
 });
 
@@ -326,59 +348,89 @@ describe('buildBusinessInterpretation', () => {
 
 // ---- Integration tests ----
 
-test('the About SHAP card leads with the two-level model-behaviour/selected-forecast framing', async () => {
+test('the About SHAP explanations disclosure leads with the two-level model-behaviour/selected-forecast framing, collapsed by default', async () => {
   mockHappyPath();
   await renderExplanation();
 
+  const toggle = screen.getByRole('button', { name: /what do these shap explanations show/i });
+  expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  expect(screen.queryByText(/SHAP estimates how features influence model predictions/)).not.toBeInTheDocument();
+
+  await act(async () => { fireEvent.click(toggle); });
+
+  expect(toggle).toHaveAttribute('aria-expanded', 'true');
   expect(screen.getByText(
     'SHAP estimates how features influence model predictions at two levels: overall model '
     + 'behaviour and one selected forecast.'
   )).toBeInTheDocument();
 });
 
-test('tabs are correctly labelled with tablist/tab semantics, defaulting to Overall model', async () => {
+test('tabs are correctly labelled with tablist/tab semantics, defaulting to Selected forecast', async () => {
   mockHappyPath();
   await renderExplanation();
 
   expect(screen.getByRole('tablist', { name: /shap explanation scope/i })).toBeInTheDocument();
-  const overallTab = screen.getByRole('tab', { name: 'Overall model' });
+  const overallTab = screen.getByRole('tab', { name: 'Overall model importance' });
   const selectedTab = screen.getByRole('tab', { name: 'Selected forecast' });
-  expect(overallTab).toHaveAttribute('aria-selected', 'true');
-  expect(selectedTab).toHaveAttribute('aria-selected', 'false');
+  expect(selectedTab).toHaveAttribute('aria-selected', 'true');
+  expect(overallTab).toHaveAttribute('aria-selected', 'false');
 });
 
 test('arrow-key navigation moves focus and activates the other tab', async () => {
   mockHappyPath();
   await renderExplanation();
 
-  const overallTab = screen.getByRole('tab', { name: 'Overall model' });
-  overallTab.focus();
-  fireEvent.keyDown(overallTab, { key: 'ArrowRight' });
-
   const selectedTab = screen.getByRole('tab', { name: 'Selected forecast' });
-  expect(selectedTab).toHaveAttribute('aria-selected', 'true');
-  expect(selectedTab).toHaveFocus();
+  selectedTab.focus();
+  fireEvent.keyDown(selectedTab, { key: 'ArrowRight' });
+
+  const overallTab = screen.getByRole('tab', { name: 'Overall model importance' });
+  expect(overallTab).toHaveAttribute('aria-selected', 'true');
+  expect(overallTab).toHaveFocus();
 });
+
+async function openSelectedForecastTab() {
+  await act(async () => {
+    fireEvent.click(screen.getByRole('tab', { name: 'Selected forecast' }));
+  });
+}
+
+async function openOverallTab() {
+  await act(async () => {
+    fireEvent.click(screen.getByRole('tab', { name: 'Overall model importance' }));
+  });
+}
 
 test('global copy describes a sampled observation set, never the selected store or "all test predictions"', async () => {
   mockHappyPath();
   await renderExplanation();
+  await openOverallTab();
 
   expect(screen.getByText(/reproducible sample of 1,000 held-out test observations/i)).toBeInTheDocument();
   expect(screen.getByText('1,000 sampled test observations')).toBeInTheDocument();
   expect(screen.queryByText(/all test predictions/i)).not.toBeInTheDocument();
   expect(screen.getByText('Store selection applies to the Selected forecast tab.')).toBeInTheDocument();
+  expect(screen.getByText(/not the explanation for one selected store and period/i)).toBeInTheDocument();
 
-  // The visible "Overall model" tabpanel itself must never mention the
-  // selected store — getByRole excludes the still-hidden "Selected
+  // The visible "Overall model importance" tabpanel itself must never mention
+  // the selected store — getByRole excludes the now-hidden "Selected
   // forecast" panel by default, so this only inspects the overall panel.
   const overallPanel = screen.getByRole('tabpanel');
   expect(within(overallPanel).queryByText(/store 1/i)).not.toBeInTheDocument();
 });
 
+test('global panel shows the loaded feature count once the selected forecast has resolved it', async () => {
+  mockHappyPath();
+  await renderExplanation();
+  await openOverallTab();
+
+  expect(screen.getByText('20 modelled features')).toBeInTheDocument();
+});
+
 test('global rows render sorted, with the deterministic summary sentence built from the mocked data', async () => {
   mockHappyPath();
   await renderExplanation();
+  await openOverallTab();
 
   expect(screen.getByText(
     'Promotion activity has the largest average influence on weekly predictions, '
@@ -428,11 +480,47 @@ test('changing forecast type refetches global SHAP with the new type', async () 
   expect(client.get).toHaveBeenCalledWith(expect.stringContaining('forecast_type=monthly'));
 });
 
-async function openSelectedForecastTab() {
+test('the context strip shows store, frequency, selected period, predicted sales and feature count', async () => {
+  mockHappyPath();
+  await renderExplanation();
+  await openSelectedForecastTab();
+
+  const strip = screen.getByRole('group', { name: /selected forecast context/i });
+  expect(within(strip).getByText('Store 1')).toBeInTheDocument();
+  expect(within(strip).getByText('Weekly')).toBeInTheDocument();
+  expect(within(strip).getByText('Week beginning 27 July 2015')).toBeInTheDocument();
+  expect(within(strip).getByText('26,872')).toBeInTheDocument();
+  expect(within(strip).getByText('20')).toBeInTheDocument();
+});
+
+test('shows actual sales in the context strip only when available for the selected period, and never issues a POST request', async () => {
+  mockHappyPath();
+  await renderExplanation();
+  await openSelectedForecastTab();
+
+  // The latest period (the default selection) has no recorded actual sales.
+  expect(screen.queryByText(/actual sales/i)).not.toBeInTheDocument();
+
   await act(async () => {
-    fireEvent.click(screen.getByRole('tab', { name: 'Selected forecast' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Previous period' }));
   });
-}
+
+  // Stepping back to a period with recorded actual sales surfaces it in the
+  // compact context strip — SHAP evidence itself never uses this value.
+  expect(screen.getByText(/actual sales/i)).toBeInTheDocument();
+  expect(screen.getByText('25,800')).toBeInTheDocument();
+
+  expect(client.post).not.toHaveBeenCalled();
+});
+
+test('shows a visible fallback notice when a handed-off period is unavailable for the current store', async () => {
+  mockHappyPath();
+  await renderExplanation({ handoffPeriod: '2015-06-01' }); // not present in WEEKLY_FORECASTS
+  await openSelectedForecastTab();
+
+  expect(screen.getByText(/requested period isn't available for this store and forecast type/i)).toBeInTheDocument();
+  expect(screen.getByText('27 Jul 2015')).toBeInTheDocument(); // falls back to the latest available period
+});
 
 test('the local period navigator defaults to the latest available period', async () => {
   mockHappyPath();
@@ -497,7 +585,7 @@ test('the local request carries forecast type, store and period together', async
   );
 });
 
-test('the waterfall and the technical table show identical values for the same feature (no sync bug)', async () => {
+test('the waterfall and the inputs table show identical values for the same feature (no sync bug)', async () => {
   mockHappyPath();
   await renderExplanation();
   await openSelectedForecastTab();
@@ -506,25 +594,39 @@ test('the waterfall and the technical table show identical values for the same f
   // ResponsiveContainer, so the waterfall's own accessible mobile
   // stacked-card alternative (always mounted, same underlying
   // buildWaterfall() data) is what's inspected here — it's the first
-  // "Promotion activity" button in DOM order, before the technical table's
+  // "Promotion activity" button in DOM order, before the inputs table's
   // own mobile row cards further down the page.
   const waterfallButtons = screen.getAllByRole('button', { name: /Promotion activity/ });
   expect(waterfallButtons[0]).toHaveTextContent('+4,476');
 
-  // Technical table row for the same feature, same rounded value — read
-  // from the same single localExplanation object.
-  fireEvent.click(screen.getByText('Show technical details'));
+  // Inputs table row for the same feature, same rounded value — read from
+  // the same single localExplanation object. The table is core content and
+  // is visible immediately, with no disclosure to open first.
   const technicalTable = screen.getByRole('table');
   const promoRow = within(technicalTable).getByText('Promotion activity').closest('tr');
   expect(within(promoRow).getByText('+4,476')).toBeInTheDocument();
 });
 
-test('the technical table\'s full-precision tooltip uses the real minus sign, not an ASCII hyphen', async () => {
+test('the inputs table shows the technical feature name and Raises/Lowers prediction badges', async () => {
   mockHappyPath();
   await renderExplanation();
   await openSelectedForecastTab();
 
-  fireEvent.click(screen.getByText('Show technical details'));
+  const technicalTable = screen.getByRole('table');
+  expect(within(technicalTable).getByText('PromoDays')).toBeInTheDocument();
+
+  const promoRow = within(technicalTable).getByText('Promotion activity').closest('tr');
+  expect(within(promoRow).getByText('Raises prediction')).toBeInTheDocument();
+
+  const rollingRow = within(technicalTable).getByText('Average sales over the previous 12 weeks').closest('tr');
+  expect(within(rollingRow).getByText('Lowers prediction')).toBeInTheDocument();
+});
+
+test('the inputs table\'s full-precision tooltip uses the real minus sign, not an ASCII hyphen', async () => {
+  mockHappyPath();
+  await renderExplanation();
+  await openSelectedForecastTab();
+
   const technicalTable = screen.getByRole('table');
   const negativeRow = within(technicalTable).getByText('Average sales over the previous 12 weeks').closest('tr');
   const valueCell = within(negativeRow).getByText('−5,085');
@@ -536,7 +638,6 @@ test('"Show all features" reveals the dynamic full feature count', async () => {
   await renderExplanation();
   await openSelectedForecastTab();
 
-  fireEvent.click(screen.getByText('Show technical details'));
   expect(screen.getByText('Show all features (20)')).toBeInTheDocument();
 
   fireEvent.click(screen.getByText('Show all features (20)'));
@@ -547,14 +648,26 @@ test('"Show all features" reveals the dynamic full feature count', async () => {
   expect(within(technicalTable).getByText('Competition proximity')).toBeInTheDocument();
 });
 
-test('technical details are collapsed initially and can be expanded', async () => {
+test('technical metadata is collapsed by default and can be expanded, separately from the always-visible inputs table', async () => {
   mockHappyPath();
   await renderExplanation();
   await openSelectedForecastTab();
 
-  expect(screen.queryByText('Hide technical details')).not.toBeInTheDocument();
-  fireEvent.click(screen.getByText('Show technical details'));
-  expect(screen.getByText('Hide technical details')).toBeInTheDocument();
+  // The recorded-inputs table is core content, not hidden behind a toggle.
+  expect(screen.getByRole('table')).toBeInTheDocument();
+  expect(screen.getByText('Technical name')).toBeInTheDocument();
+
+  // The metadata disclosure itself starts closed (native <details> content
+  // isn't removed from jsdom's plain text queries, so open/closed state is
+  // asserted via the controlled summary label, matching this file's other
+  // controlled-disclosure tests).
+  expect(screen.queryByText('Hide technical metadata')).not.toBeInTheDocument();
+  expect(screen.getByText('Show technical metadata')).toBeInTheDocument();
+
+  fireEvent.click(screen.getByText('Show technical metadata'));
+
+  expect(screen.getByText('Hide technical metadata')).toBeInTheDocument();
+  expect(screen.getByText('Selected model')).toBeInTheDocument();
 });
 
 test('reconciliation failure shows a distinct unavailable state instead of mismatched numbers', async () => {
@@ -568,21 +681,33 @@ test('reconciliation failure shows a distinct unavailable state instead of misma
 
   expect(screen.getByText(/explanation unavailable/i)).toBeInTheDocument();
   expect(screen.queryByText('Baseline model output')).not.toBeInTheDocument();
-  expect(screen.queryByText('Business interpretation')).not.toBeInTheDocument();
+  expect(screen.queryByText('Plain-language interpretation')).not.toBeInTheDocument();
 });
 
-test('renders the deterministic business interpretation inside the Selected forecast panel', async () => {
+test('renders the deterministic plain-language interpretation inside the Selected forecast panel', async () => {
   mockHappyPath();
   await renderExplanation();
   await openSelectedForecastTab();
 
-  expect(screen.getByText('Business interpretation')).toBeInTheDocument();
+  expect(screen.getByText('Plain-language interpretation')).toBeInTheDocument();
   expect(screen.getByText(
     "The weekly forecast of 26,872 is 13,670 below the model's baseline output. "
     + 'Negative model contributions from average sales over the previous 12 weeks and sales fifty-two weeks ago '
     + 'reduced the prediction more than promotion activity increased it.'
   )).toBeInTheDocument();
   expect(screen.getByText(/not a business recommendation/i)).toBeInTheDocument();
+  expect(screen.getByText(/not a human-participant evaluation/i)).toBeInTheDocument();
+});
+
+test('offers an in-page link from the selected forecast to Overall model importance', async () => {
+  mockHappyPath();
+  await renderExplanation();
+  await openSelectedForecastTab();
+
+  fireEvent.click(screen.getByRole('button', { name: /compare with overall model importance/i }));
+
+  const overallTab = screen.getByRole('tab', { name: 'Overall model importance' });
+  expect(overallTab).toHaveAttribute('aria-selected', 'true');
 });
 
 test('does not render the AI Recommendations handoff when no page navigator is supplied', async () => {
@@ -593,13 +718,15 @@ test('does not render the AI Recommendations handoff when no page navigator is s
   expect(screen.queryByRole('button', { name: /open ai recommendations/i })).not.toBeInTheDocument();
 });
 
-test('the AI Recommendations handoff navigates to the agent page, handing off the shared store/forecast-type/period state', async () => {
+test('the AI Recommendations handoff uses this page\'s own copy and hands off the shared store/forecast-type/period state', async () => {
   mockHappyPath();
   const setActivePage = jest.fn();
   const setHandoffPeriod = jest.fn();
   await renderExplanation({ setActivePage, setHandoffPeriod });
   await openSelectedForecastTab();
 
+  expect(screen.getByText('Next step: recommendations')).toBeInTheDocument();
+  expect(screen.getByText('Use this explanation as evidence for AI-generated retail recommendations.')).toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Open AI Recommendations' })).toBeInTheDocument();
 
   fireEvent.click(screen.getByRole('button', { name: /open ai recommendations/i }));
@@ -630,16 +757,6 @@ test('on a historical period, the handoff still offers to open AI Recommendation
   expect(setActivePage).toHaveBeenCalledWith('agent');
 });
 
-test('never renders an actual-sales value, and never issues a POST request', async () => {
-  mockHappyPath();
-  await renderExplanation();
-  await openSelectedForecastTab();
-
-  expect(screen.queryByText('24,500')).not.toBeInTheDocument();
-  expect(screen.queryByText('25,800')).not.toBeInTheDocument();
-  expect(client.post).not.toHaveBeenCalled();
-});
-
 test('shows an error banner with a working retry on global SHAP failure', async () => {
   client.get.mockImplementation((url) => {
     if (url.startsWith('/shap/global')) return Promise.reject(new Error('network down'));
@@ -647,6 +764,7 @@ test('shows an error banner with a working retry on global SHAP failure', async 
     return Promise.resolve({ data: LOCAL_SHAP_RESPONSE });
   });
   await renderExplanation();
+  await openOverallTab();
 
   expect(screen.getByRole('alert')).toBeInTheDocument();
 
