@@ -52,6 +52,7 @@ export default function App() {
           setForecastType={setForecastType}
           setSelectedStore={setSelectedStore}
           setActivePage={setActivePage}
+          setHandoffPeriod={setHandoffPeriod}
           filters={comparisonFilters}
           setFilters={setComparisonFilters}
           user={user}

@@ -1,9 +1,10 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import {
-  ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import {
-  TrendingUp, BarChart3, ArrowUp, ArrowDown, Zap, Target, Download, Info, ChevronLeft, ChevronRight,
+  TrendingUp, BarChart3, ArrowUp, ArrowDown, Activity, Percent, Download, Info,
+  ChevronLeft, ChevronRight, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import client from '../../api/client';
 import { useApi } from '../../hooks/useApi';
@@ -17,7 +18,7 @@ import { SkeletonCard, SkeletonChart, SkeletonTable } from '../../components/Ske
 
 const compactNumber = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 });
 
-// Full-length formatters (table cells, tooltips, the date-range context badge).
+// Full-length formatters (table cells, tooltips, the date-range context line).
 const FULL_DATE_FMT        = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 const MONTH_YEAR_FMT       = new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric' });
 const DAY_MONTH_FMT        = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long' });
@@ -27,46 +28,20 @@ const SHORT_DATE_FMT       = new Intl.DateTimeFormat('en-GB', { day: 'numeric', 
 const DAY_MONTH_SHORT_FMT  = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' });
 const SHORT_MONTH_YEAR_FMT = new Intl.DateTimeFormat('en-GB', { month: 'short', year: 'numeric' });
 
-// These two thresholds are interface interpretation rules for this page's
-// Trend/Result labelling only — a display convention chosen to make the
-// breakdown table and tooltip scannable. They are NOT model-evaluation
-// standards: the model's actual accuracy is reported elsewhere (the test-set
-// MAE/RMSE/MAPE/RMSPE in the model comparison metadata, and this page's own
-// Displayed-period MAE/MAPE KPIs), and neither of those come from these
-// thresholds or are affected by them. Keep this note in sync with the
-// column-header tooltips below, which surface the same distinction to users.
-const TREND_THRESHOLD_PCT = 1;
-const CLOSE_FORECAST_THRESHOLD_PCT = 2;
-
 // Real minus sign (U+2212), not the ASCII hyphen-minus that Number.toFixed
 // produces — used everywhere a negative value is shown (table, tooltip, CSV).
 const MINUS = '−';
 
-const RESULT_BADGE = {
-  'Over forecast' : 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400',
-  'Under forecast': 'bg-orange-50 text-orange-600 dark:bg-orange-500/10 dark:text-orange-400',
-  'Close forecast': 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
+// Factual, threshold-free labels for how a prediction relates to its actual
+// value — replaces the old tolerance-based "Close forecast" category, which
+// presented an arbitrary percentage window as a validated measure of
+// forecast quality. Determined from ORIGINAL (unrounded) values everywhere
+// it's computed, never from rounded display figures.
+const DIRECTION_BADGE = {
+  'Above actual' : 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400',
+  'Below actual' : 'bg-orange-50 text-orange-600 dark:bg-orange-500/10 dark:text-orange-400',
+  'Matches actual': 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
 };
-
-// Compact glyph for the Trend column — "Change from previous" already states
-// the direction and magnitude as a percentage, so Trend is a quick-scan icon
-// rather than a second text repetition of the same fact.
-const TREND_BADGE = {
-  'Starting period'    : { symbol: '–', className: 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500' },
-  'Increase'           : { symbol: '↑', className: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400' },
-  'Decrease'           : { symbol: '↓', className: 'bg-orange-50 text-orange-600 dark:bg-orange-500/10 dark:text-orange-400' },
-  'No material change' : { symbol: '→', className: 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400' },
-};
-
-function TrendBadge({ trend }) {
-  const { symbol, className } = TREND_BADGE[trend];
-  return (
-    <span className={`badge inline-flex items-center justify-center w-6 ${className}`} title={trend}>
-      <span aria-hidden="true">{symbol}</span>
-      <span className="sr-only">{trend}</span>
-    </span>
-  );
-}
 
 function toDate(period) {
   return new Date(`${period}T00:00:00`);
@@ -106,6 +81,14 @@ export function formatPeriodLabel(period, forecastType) {
   return forecastType === 'weekly' ? formatWeeklyPeriod(period) : formatMonthlyPeriod(period);
 }
 
+// Compact per-cell period text for the breakdown table — paired with a
+// dynamic column heading ("Week beginning" / "Month") that carries the
+// context the long formatPeriodLabel() form would otherwise repeat on every
+// row, which was wide enough to wrap and produce uneven row heights.
+export function formatTablePeriod(period, forecastType) {
+  return forecastType === 'weekly' ? formatShortPeriod(period, 'weekly') : formatMonthlyPeriod(period);
+}
+
 export function formatDateRange(periods, forecastType) {
   if (!periods || periods.length === 0) return '';
   const sorted = [...periods].sort();
@@ -121,7 +104,8 @@ export function formatDateRange(periods, forecastType) {
 }
 
 // Zero-based "nice" domain: +10% headroom, ceiling rounded to a
-// 1/2/4/5/6/8/10 x 10^n step.
+// 1/2/4/5/6/8/10 x 10^n step. Used for the "Start at zero" mode, and as the
+// fallback for focusedDomain's degenerate cases (flat/all-zero/empty series).
 const NICE_STEPS = [1, 2, 4, 5, 6, 8, 10];
 export function niceDomain(values) {
   const finite = (values || []).filter(v => Number.isFinite(v));
@@ -134,27 +118,77 @@ export function niceDomain(values) {
   return [0, niceNormalized * magnitude];
 }
 
-export function computeChange(current, previous) {
-  if (!previous || !previous.prediction) return null;
+function niceStep(rawStep) {
+  const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
+  const normalized = rawStep / magnitude;
+  const niceNormalized = normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10;
+  return niceNormalized * magnitude;
+}
+
+// Default (focused) domain: pads the observed [min, max] range by ~10% and
+// rounds both ends outward to a shared "nice" step, so the axis hugs the
+// data instead of always starting at zero. Falls back to the zero-based
+// niceDomain() for a constant/all-zero/degenerate series, where there is no
+// range to focus on.
+export function focusedDomain(values, tickCount = 6) {
+  const finite = (values || []).filter(v => Number.isFinite(v));
+  if (finite.length === 0) return [0, 1];
+  const rawMin = Math.min(...finite);
+  const rawMax = Math.max(...finite);
+  if (rawMin === rawMax) return niceDomain(finite);
+
+  const range = rawMax - rawMin;
+  const pad = range * 0.1;
+  const paddedMin = Math.max(0, rawMin - pad); // sales values are never negative
+  const paddedMax = rawMax + pad;
+
+  const step = niceStep((paddedMax - paddedMin) / (tickCount - 1));
+  const niceFloor = Math.max(0, Math.floor(paddedMin / step) * step);
+  const niceCeil = Math.ceil(paddedMax / step) * step;
+
+  if (niceCeil <= niceFloor) return niceDomain(finite); // defensive: never a zero-width/inverted domain
+  return [niceFloor, niceCeil];
+}
+
+// Always pools Predicted AND Actual values regardless of whether the actual
+// -sales toggle is currently on, so the Y-axis never shifts when that toggle
+// is switched — only when the underlying chart data itself changes.
+function seriesValues(data) {
+  const values = [];
+  (data || []).forEach(d => {
+    if (Number.isFinite(d.Predicted)) values.push(d.Predicted);
+    if (d.Actual != null && Number.isFinite(d.Actual)) values.push(d.Actual);
+  });
+  return values;
+}
+
+// Distinguishes "no previous period exists" (first period in the window)
+// from "a previous period exists but its prediction was zero" (percentage
+// change is undefined) — both would otherwise collapse into the same
+// "0%"/blank text, which misrepresents an undefined change as no change.
+export function describePeriodChange(current, previous) {
+  if (!previous) {
+    return { state: 'no-previous', text: 'No previous prediction' };
+  }
+  if (!previous.prediction) {
+    return { state: 'zero-previous', text: 'Not calculable' };
+  }
   const pct = ((current.prediction - previous.prediction) / Math.abs(previous.prediction)) * 100;
-  return { pct, direction: current.prediction >= previous.prediction ? 'up' : 'down' };
+  return {
+    state: 'ok',
+    value: pct,
+    direction: current.prediction >= previous.prediction ? 'up' : 'down',
+    text: `${pct >= 0 ? '+' : MINUS}${Math.abs(pct).toFixed(1)}%`,
+  };
 }
 
-export function classifyTrend(pct) {
-  if (Math.abs(pct) < TREND_THRESHOLD_PCT) return 'No material change';
-  return pct >= 0 ? 'Increase' : 'Decrease';
-}
-
-// difference is always predicted − actual. Diff === 0 is trivially a close
-// forecast; otherwise a forecast within CLOSE_FORECAST_THRESHOLD_PCT of the
-// actual value (by absolute percentage error) also counts as close — the
-// threshold is surfaced in the Result column's header tooltip, not silent.
+// Factual direction only — no tolerance/threshold. "Matches actual" fires
+// only on an exact match of the original (unrounded) values; everything
+// else is either above or below. Never called with pre-rounded numbers.
 export function classifyResult(predicted, actual) {
   const diff = predicted - actual;
-  if (diff === 0) return 'Close forecast';
-  const ape = actual !== 0 ? (Math.abs(diff) / Math.abs(actual)) * 100 : null;
-  if (ape != null && ape <= CLOSE_FORECAST_THRESHOLD_PCT) return 'Close forecast';
-  return diff > 0 ? 'Over forecast' : 'Under forecast';
+  if (diff === 0) return 'Matches actual';
+  return diff > 0 ? 'Above actual' : 'Below actual';
 }
 
 export function computeMAE(forecasts) {
@@ -164,8 +198,9 @@ export function computeMAE(forecasts) {
   return total / eligible.length;
 }
 
-// Rows with zero actual sales are excluded (division by zero) — disclosed
-// via the KPI card's tooltip prop, not silently dropped.
+// Rows with zero actual sales are excluded (percentage error is undefined
+// when the denominator is zero) — disclosed via the KPI's tooltip/sublabel,
+// not silently dropped.
 export function computeMAPE(forecasts) {
   const eligible = forecasts.filter(f => f.actual_sales != null && f.actual_sales !== 0);
   if (!eligible.length) return null;
@@ -173,28 +208,15 @@ export function computeMAPE(forecasts) {
   return (total / eligible.length) * 100;
 }
 
-export function buildForecastSummary(forecasts, forecastType) {
-  if (!forecasts || forecasts.length === 0) return '';
-  const predictions = forecasts.map(f => f.prediction);
-  const min = Math.min(...predictions);
-  const max = Math.max(...predictions);
-  const maxRow = forecasts.find(f => f.prediction === max);
-  const unit = forecastType === 'weekly' ? 'weeks' : 'months';
-  const periodPhrase = forecastType === 'weekly'
-    ? `the week beginning ${formatFullDate(maxRow.period)}`
-    : formatMonthlyPeriod(maxRow.period);
-  return `Predicted sales range from ${Math.round(min).toLocaleString('en-US')} to ${Math.round(max).toLocaleString('en-US')} `
-    + `across ${forecasts.length} ${unit}. The highest forecast occurs during ${periodPhrase}.`;
-}
-
-export function buildComparisonSummary(forecasts) {
-  if (!forecasts || forecasts.length === 0) return '';
+// Explains a null MAE/MAPE honestly instead of a bare "N/A" — distinguishes
+// "no recorded sales at all" from "recorded sales exist but are all zero".
+export function unavailableReason(forecasts, { requireNonZero = false } = {}) {
   const withActual = forecasts.filter(f => f.actual_sales != null);
-  const higherCount = withActual.filter(f => f.prediction > f.actual_sales).length;
-  const mape = computeMAPE(forecasts);
-  const mapeText = mape != null ? `${mape.toFixed(1)}%` : 'unavailable';
-  return `Predictions were higher than actual sales in ${higherCount} of ${withActual.length} periods. `
-    + `The displayed-period MAPE is ${mapeText}.`;
+  if (withActual.length === 0) return 'No recorded sales are available for the displayed periods.';
+  if (requireNonZero && withActual.every(f => f.actual_sales === 0)) {
+    return 'All periods with recorded sales have zero actual sales.';
+  }
+  return 'No eligible periods for this calculation.';
 }
 
 function csvEscape(value) {
@@ -202,25 +224,37 @@ function csvEscape(value) {
   return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
 }
 
+// Every figure here is derived from the ORIGINAL forecast values (never a
+// pre-rounded display string), matching the table/tooltip/summary
+// calculations exactly — only the final cell text is rounded for display.
 export function buildCsv(forecasts, forecastType, showActual) {
   const headers = showActual
-    ? ['Period', 'Predicted Sales', 'Actual Sales', 'Difference', 'Absolute Percentage Error']
-    : ['Period', 'Predicted Sales'];
+    ? ['Period', 'Predicted Sales', 'Actual Sales', 'Predicted Minus Actual', 'Absolute Percentage Error', 'Direction']
+    : ['Period', 'Predicted Sales', 'Change From Previous Prediction'];
   const lines = [headers.join(',')];
-  forecasts.forEach((f) => {
+
+  forecasts.forEach((f, i) => {
     const label = csvEscape(formatPeriodLabel(f.period, forecastType));
     const predicted = Math.round(f.prediction);
+
     if (!showActual) {
-      lines.push([label, predicted].join(','));
+      const previous = i > 0 ? forecasts[i - 1] : null;
+      const change = describePeriodChange(f, previous);
+      lines.push([label, predicted, csvEscape(change.text)].join(','));
       return;
     }
+
     const hasActual = f.actual_sales != null;
     const actual = hasActual ? Math.round(f.actual_sales) : '';
-    const diff = hasActual ? predicted - actual : null;
-    const diffLabel = hasActual ? `${diff >= 0 ? '+' : MINUS}${Math.abs(diff)}` : '';
-    const ape = hasActual && actual !== 0 ? `${((Math.abs(diff) / Math.abs(actual)) * 100).toFixed(1)}%` : '';
-    lines.push([label, predicted, actual, diffLabel, ape].join(','));
+    const diffRaw = hasActual ? f.prediction - f.actual_sales : null;
+    const diffLabel = hasActual ? `${diffRaw >= 0 ? '+' : MINUS}${Math.abs(Math.round(diffRaw))}` : '';
+    const ape = hasActual
+      ? (f.actual_sales !== 0 ? `${((Math.abs(diffRaw) / Math.abs(f.actual_sales)) * 100).toFixed(1)}%` : 'Undefined')
+      : '';
+    const direction = hasActual ? classifyResult(f.prediction, f.actual_sales) : 'Unavailable';
+    lines.push([label, predicted, actual, diffLabel, ape, csvEscape(direction)].join(','));
   });
+
   return lines.join('\n');
 }
 
@@ -238,52 +272,102 @@ function downloadCsv(csvContent, filename) {
 
 // ---- Presentational subcomponents ----
 
-function AboutSection({ forecastType }) {
+// Small keyboard-focusable hint icon — mirrors KpiCard's own `tooltip` prop
+// pattern (tabIndex + native title + aria-label) rather than a plain `title`
+// attribute on a table header, so column help works on focus/touch too, not
+// only mouse hover.
+function HeaderHint({ text }) {
+  return (
+    <span
+      tabIndex={0}
+      role="img"
+      aria-label={text}
+      title={text}
+      className="inline-flex ml-1 align-middle text-gray-400 dark:text-gray-500 cursor-help
+                 focus:outline-none focus:ring-2 focus:ring-indigo-400 rounded-full"
+    >
+      <Info size={12} />
+    </span>
+  );
+}
+
+// Collapsed by default, driven by explicit React state (rather than native
+// <details> default-open behaviour) so the chevron icon is guaranteed to
+// agree with the open/closed state — same controlled-disclosure convention
+// Explanation.jsx uses for its own "Show technical details" section.
+function AboutSection({ forecastType, closeThresholdNote }) {
+  const [open, setOpen] = useState(false);
   const steps = [
-    { title: 'View the forecast', desc: `Examine ${forecastType} predicted sales.` },
-    { title: 'Compare with actuals', desc: 'Reveal historical actual sales to evaluate model performance.' },
-    { title: 'Inspect each period', desc: 'Select a chart point or table row to review its values and error.' },
+    { title: 'View the forecast', desc: `Examine ${forecastType} predicted sales for the selected store.` },
+    { title: 'Compare with actuals', desc: 'Reveal recorded sales to evaluate the saved predictions retrospectively.' },
+    { title: 'Inspect each period', desc: 'Select a chart point, use Previous/Next, or select a table row to review its values.' },
   ];
+
   return (
     <div className="rounded-2xl border border-gray-100 dark:border-gray-700/60 bg-gray-50/60
                     dark:bg-gray-800/40 px-5 py-3 mb-6">
-      <div className="flex items-center gap-2 mb-1.5">
-        <Info size={14} className="text-indigo-500 dark:text-indigo-400 flex-shrink-0" aria-hidden="true" />
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">About this forecast analysis</h2>
-      </div>
-      <p className="text-secondary text-xs mb-1.5 max-w-3xl">
-        This page presents precomputed XGBoost sales predictions for the selected store. Start with the
-        forecast-only view, optionally reveal actual sales for retrospective evaluation, and inspect each
-        period in the chart or breakdown table.
-      </p>
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        aria-expanded={open}
+        className="w-full flex items-center justify-between gap-2 min-h-[44px] text-sm font-semibold
+                   text-gray-700 dark:text-gray-200 focus:outline-none focus-visible:ring-2
+                   focus-visible:ring-indigo-400 rounded"
+      >
+        <span className="flex items-center gap-2">
+          <Info size={14} className="text-indigo-500 dark:text-indigo-400 flex-shrink-0" aria-hidden="true" />
+          About this analysis
+        </span>
+        {open
+          ? <ChevronUp size={16} className="text-gray-400 dark:text-gray-500 flex-shrink-0" aria-hidden="true" />
+          : <ChevronDown size={16} className="text-gray-400 dark:text-gray-500 flex-shrink-0" aria-hidden="true" />}
+      </button>
 
-      {/* The three steps live only inside this collapsed-by-default accordion
-          on every breakpoint — kept the intro paragraph always visible above
-          it, since that's the part worth reading unprompted; the walkthrough
-          is opt-in detail, not something that should push the chart down the
-          page on a laptop screen. */}
-      <details className="text-xs mb-1.5">
-        <summary className="cursor-pointer text-indigo-600 dark:text-indigo-400 font-medium
-                             focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 rounded">
-          How to use this page
-        </summary>
-        <dl className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {steps.map(step => (
-            <div key={step.title}>
-              <dt className="font-semibold text-gray-700 dark:text-gray-200">{step.title}</dt>
-              <dd className="text-secondary mt-0.5">{step.desc}</dd>
-            </div>
-          ))}
-        </dl>
-      </details>
+      {open && (
+        <div className="mt-3 text-xs space-y-3 animate-fadeIn">
+          <p className="text-secondary max-w-3xl">
+            This page presents precomputed XGBoost sales predictions for the selected store, held out during
+            model testing. Recorded sales are shown here for historical comparison against those saved predictions.
+          </p>
 
-      <p className="text-secondary text-xs">
-        These are historical test predictions. The model is not retrained when this page loads.
-      </p>
+          <dl className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {steps.map(step => (
+              <div key={step.title}>
+                <dt className="font-semibold text-gray-700 dark:text-gray-200">{step.title}</dt>
+                <dd className="text-secondary mt-0.5">{step.desc}</dd>
+              </div>
+            ))}
+          </dl>
+
+          <div className="pt-2 border-t border-gray-200 dark:border-gray-700/60 space-y-1.5">
+            <p className="text-secondary">
+              <strong className="text-gray-700 dark:text-gray-200">Average absolute error (MAE)</strong> is the
+              mean absolute difference between recorded and predicted sales across the displayed periods.
+            </p>
+            <p className="text-secondary">
+              <strong className="text-gray-700 dark:text-gray-200">Average absolute percentage error (MAPE)</strong>{' '}
+              averages absolute percentage errors across displayed periods with non-zero actual sales; periods
+              with zero actual sales are excluded because the percentage is undefined. This is not the same as
+              accuracy.
+            </p>
+            <p className="text-secondary">{closeThresholdNote}</p>
+            <p className="text-secondary">
+              In the period breakdown, a positive "Predicted − actual" value means the prediction was higher
+              than the recorded sales for that period; a negative value means it was lower.
+            </p>
+            <p className="text-secondary">
+              See Model Comparison for the model's evaluation metrics across all stores.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
+// Static "Actual sales" label with the toggle's own visual state (position +
+// aria-checked) communicating visibility, rather than a label that itself
+// changes text — matches the Dashboard's chart-header toggle convention.
 function ComparisonSwitch({ showActual, onToggle }) {
   return (
     <button
@@ -304,7 +388,7 @@ function ComparisonSwitch({ showActual, onToggle }) {
         <span className={`inline-block h-3 w-3 transform rounded-full bg-white shadow
                           transition-transform ${showActual ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
       </span>
-      {showActual ? 'Hide actual sales' : 'Show actual sales'}
+      Actual sales
     </button>
   );
 }
@@ -323,7 +407,7 @@ function PeriodNavigator({ forecasts, effectivePeriod, forecastType, onSelect })
     'focus:outline-none focus:ring-2 focus:ring-indigo-400';
 
   return (
-    <div className="flex items-center justify-center gap-3 mt-3" role="group" aria-label="Step through forecast periods">
+    <div className="flex items-center justify-center gap-3 mt-2" role="group" aria-label="Step through forecast periods">
       <button
         type="button"
         onClick={() => !atFirst && onSelect(forecasts[index - 1].period)}
@@ -333,8 +417,14 @@ function PeriodNavigator({ forecasts, effectivePeriod, forecastType, onSelect })
       >
         <ChevronLeft size={14} /> Previous
       </button>
-      <span className="text-sm font-semibold text-gray-700 dark:text-gray-200 min-w-[6.5rem] text-center">
-        {formatShortPeriod(effectivePeriod, forecastType)}
+      {/* aria-live announces the new selection to screen readers on click —
+          hovering the chart never touches this state, so it never fires from
+          a hover preview, only from an actual selection change. */}
+      <span
+        aria-live="polite"
+        className="text-sm font-semibold text-gray-700 dark:text-gray-200 min-w-[9rem] text-center"
+      >
+        Selected: {formatShortPeriod(effectivePeriod, forecastType)}
       </span>
       <button
         type="button"
@@ -353,47 +443,40 @@ function ForecastTooltip({ active, payload, label, forecasts, forecastType, show
   if (!active || !payload?.length) return null;
   const idx = forecasts.findIndex(f => f.period === label);
   const current = idx >= 0 ? forecasts[idx] : null;
+  if (!current) return null;
   const previous = idx > 0 ? forecasts[idx - 1] : null;
-  const predicted = payload.find(p => p.dataKey === 'Predicted')?.value;
-  const actual = showActual ? payload.find(p => p.dataKey === 'Actual')?.value : undefined;
-  const periodLabel = forecastType === 'weekly' ? 'Week beginning' : 'Month';
-  const change = current ? computeChange(current, previous) : null;
+  const change = describePeriodChange(current, previous);
 
-  const hasActual = showActual && actual != null;
-  let diff, ape, result;
-  if (hasActual && predicted != null) {
-    diff = predicted - actual;
-    ape = actual !== 0 ? (Math.abs(diff) / Math.abs(actual)) * 100 : null;
-    result = classifyResult(predicted, actual);
-  }
+  const hasActual = showActual && current.actual_sales != null;
+  const diff = hasActual ? current.prediction - current.actual_sales : null;
+  const ape = hasActual && current.actual_sales !== 0 ? (Math.abs(diff) / Math.abs(current.actual_sales)) * 100 : null;
+  const direction = hasActual ? classifyResult(current.prediction, current.actual_sales) : null;
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700
                     shadow-lg px-4 py-3 text-xs min-w-[200px]">
       <p className="font-semibold text-gray-700 dark:text-gray-200 mb-2">
-        {periodLabel}: {formatFullDate(label)}
+        {formatPeriodLabel(label, forecastType)}
       </p>
       <div className="space-y-1.5">
         <div className="flex items-center justify-between gap-4">
           <span className="text-gray-500 dark:text-gray-400">Predicted sales</span>
           <span className="font-semibold text-gray-800 dark:text-gray-100">
-            {predicted != null ? Math.round(predicted).toLocaleString('en-US') : '—'}
+            {Math.round(current.prediction).toLocaleString('en-US')}
           </span>
         </div>
 
         {!showActual && (
           <div className="flex items-center justify-between gap-4">
-            <span className="text-gray-500 dark:text-gray-400">Change from previous period</span>
-            <span className="font-semibold text-gray-800 dark:text-gray-100">
-              {change ? `${change.pct >= 0 ? '+' : MINUS}${Math.abs(change.pct).toFixed(1)}%` : 'Starting period'}
-            </span>
+            <span className="text-gray-500 dark:text-gray-400">Change from previous prediction</span>
+            <span className="font-semibold text-gray-800 dark:text-gray-100">{change.text}</span>
           </div>
         )}
 
         {showActual && !hasActual && (
           <div className="flex items-center justify-between gap-4">
             <span className="text-gray-500 dark:text-gray-400">Actual sales</span>
-            <span className="font-semibold text-gray-800 dark:text-gray-100">Not available</span>
+            <span className="font-semibold text-gray-800 dark:text-gray-100">Unavailable</span>
           </div>
         )}
 
@@ -401,10 +484,12 @@ function ForecastTooltip({ active, payload, label, forecasts, forecastType, show
           <>
             <div className="flex items-center justify-between gap-4">
               <span className="text-gray-500 dark:text-gray-400">Actual sales</span>
-              <span className="font-semibold text-gray-800 dark:text-gray-100">{Math.round(actual).toLocaleString('en-US')}</span>
+              <span className="font-semibold text-gray-800 dark:text-gray-100">
+                {Math.round(current.actual_sales).toLocaleString('en-US')}
+              </span>
             </div>
             <div className="flex items-center justify-between gap-4">
-              <span className="text-gray-500 dark:text-gray-400">Difference</span>
+              <span className="text-gray-500 dark:text-gray-400">Predicted {MINUS} actual</span>
               <span className="font-semibold text-gray-800 dark:text-gray-100">
                 {diff >= 0 ? '+' : MINUS}{Math.abs(Math.round(diff)).toLocaleString('en-US')}
               </span>
@@ -412,12 +497,12 @@ function ForecastTooltip({ active, payload, label, forecasts, forecastType, show
             <div className="flex items-center justify-between gap-4">
               <span className="text-gray-500 dark:text-gray-400">Absolute % error</span>
               <span className="font-semibold text-gray-800 dark:text-gray-100">
-                {ape != null ? `${ape.toFixed(1)}%` : 'N/A'}
+                {current.actual_sales !== 0 ? `${ape.toFixed(1)}%` : 'Undefined'}
               </span>
             </div>
             <div className="flex items-center justify-between gap-4">
-              <span className="text-gray-500 dark:text-gray-400">Result</span>
-              <span className="font-semibold text-gray-800 dark:text-gray-100">{result}</span>
+              <span className="text-gray-500 dark:text-gray-400">Direction</span>
+              <span className="font-semibold text-gray-800 dark:text-gray-100">{direction}</span>
             </div>
           </>
         )}
@@ -426,12 +511,122 @@ function ForecastTooltip({ active, payload, label, forecasts, forecastType, show
   );
 }
 
+// The one place a period's full detail is shown — the chart's own SVG label,
+// tooltip, and table row intentionally stay terse so this panel is the
+// single source of "what does the selection mean" detail, per period.
+function SelectedPeriodPanel({
+  forecasts, effectivePeriod, requestedPeriod, forecastType, showActual, selectedStore, setActivePage, setHandoffPeriod,
+}) {
+  const idx = forecasts.findIndex(f => f.period === effectivePeriod);
+  const current = forecasts[idx];
+  const previous = idx > 0 ? forecasts[idx - 1] : null;
+  const change = describePeriodChange(current, previous);
+
+  const hasActual = showActual && current.actual_sales != null;
+  const diff = hasActual ? current.prediction - current.actual_sales : null;
+  const ape = hasActual && current.actual_sales !== 0 ? (Math.abs(diff) / Math.abs(current.actual_sales)) * 100 : null;
+  const direction = hasActual ? classifyResult(current.prediction, current.actual_sales) : null;
+
+  const requestedUnavailable = requestedPeriod && requestedPeriod !== effectivePeriod;
+
+  return (
+    <div className="card mb-6">
+      <h2 className="card-title mb-1">Selected period</h2>
+      <p className="text-secondary text-xs mb-2">
+        Store {selectedStore} · {formatPeriodLabel(effectivePeriod, forecastType)}
+      </p>
+
+      {requestedUnavailable && (
+        <p className="badge bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400 mb-2 whitespace-normal text-left">
+          The requested period isn't available for this store and forecast type — showing{' '}
+          {formatShortPeriod(effectivePeriod, forecastType)} instead.
+        </p>
+      )}
+
+      {/* Group 1: the period's own values. */}
+      <dl className={`grid grid-cols-2 ${showActual ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-3 text-xs`}>
+        <div>
+          <dt className="text-gray-500 dark:text-gray-400">Predicted sales</dt>
+          <dd className="font-semibold text-gray-800 dark:text-gray-100 mt-0.5 tabular-nums">
+            {Math.round(current.prediction).toLocaleString('en-US')}
+          </dd>
+        </div>
+        {showActual && (
+          <div>
+            <dt className="text-gray-500 dark:text-gray-400">Actual sales</dt>
+            <dd className="font-semibold text-gray-800 dark:text-gray-100 mt-0.5 tabular-nums">
+              {hasActual ? Math.round(current.actual_sales).toLocaleString('en-US') : 'Unavailable'}
+            </dd>
+          </div>
+        )}
+      </dl>
+
+      {/* Group 2: how this period's prediction compares to recorded sales —
+          a distinct question from Group 3's forecast-over-time trend below. */}
+      {showActual && (
+        <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700/60">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-1.5">
+            Compared with recorded sales
+          </p>
+          <dl className="grid grid-cols-3 gap-3 text-xs">
+            <div>
+              <dt className="text-gray-500 dark:text-gray-400">Predicted {MINUS} actual</dt>
+              <dd className="font-semibold text-gray-800 dark:text-gray-100 mt-0.5 tabular-nums">
+                {hasActual ? `${diff >= 0 ? '+' : MINUS}${Math.abs(Math.round(diff)).toLocaleString('en-US')}` : 'Unavailable'}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-gray-500 dark:text-gray-400">Absolute % error</dt>
+              <dd className="font-semibold text-gray-800 dark:text-gray-100 mt-0.5 tabular-nums">
+                {hasActual ? (current.actual_sales !== 0 ? `${ape.toFixed(1)}%` : 'Undefined — zero actual sales') : 'Unavailable'}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-gray-500 dark:text-gray-400">Direction</dt>
+              <dd className="font-semibold text-gray-800 dark:text-gray-100 mt-0.5">
+                {hasActual ? direction : 'Unavailable'}
+              </dd>
+            </div>
+          </dl>
+        </div>
+      )}
+
+      {/* Group 3: this period's prediction vs. the previous period's
+          prediction — a forecast-trend figure, not a prediction-error one. */}
+      <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700/60">
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-1.5">
+          Compared with the previous prediction
+        </p>
+        <dl className="text-xs">
+          <div>
+            <dt className="text-gray-500 dark:text-gray-400">Change from previous prediction</dt>
+            <dd className="font-semibold text-gray-800 dark:text-gray-100 mt-0.5 tabular-nums">{change.text}</dd>
+          </div>
+        </dl>
+      </div>
+
+      {setActivePage && (
+        <button
+          type="button"
+          onClick={() => { setHandoffPeriod?.(effectivePeriod); setActivePage('explanation'); }}
+          className="mt-3 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline
+                     focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 rounded
+                     min-h-[44px] px-1 -ml-1"
+        >
+          Explain this prediction →
+        </button>
+      )}
+    </div>
+  );
+}
+
 // ---- Main page ----
 
-export default function ForecastChart({ selectedStore, forecastType, handoffPeriod, setHandoffPeriod }) {
+export default function ForecastChart({ selectedStore, forecastType, setActivePage, handoffPeriod, setHandoffPeriod }) {
   const cc = useChartColors();
   const isMobile = useIsMobile();
   const [showActual, setShowActual] = useState(false);
+  const [zeroBased, setZeroBased] = useState(false);
   // Seeds from a period handed off by another page (e.g. Dashboard's "View
   // full forecast"), then behaves as ordinary local state — consumed once,
   // then cleared so a later direct visit to this page doesn't reuse it.
@@ -440,6 +635,19 @@ export default function ForecastChart({ selectedStore, forecastType, handoffPeri
     if (handoffPeriod) setHandoffPeriod?.(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // A selection made under one store/forecast-type context shouldn't leak
+  // into a newly chosen one (periods are date strings that can coincidently
+  // exist for a different store too) — reset on an actual change, but never
+  // on first mount, so a handoff-seeded period is never immediately cleared.
+  const contextKey = `${selectedStore}|${forecastType}`;
+  const prevContextKeyRef = useRef(contextKey);
+  useEffect(() => {
+    if (prevContextKeyRef.current !== contextKey) {
+      prevContextKeyRef.current = contextKey;
+      setSelectedPeriod(null);
+    }
+  }, [contextKey]);
 
   const { data, loading, error, refetch } = useApi(
     () => client.get(`/forecast/${selectedStore}?forecast_type=${forecastType}`).then(res => res.data.forecasts),
@@ -454,10 +662,14 @@ export default function ForecastChart({ selectedStore, forecastType, handoffPeri
     Actual: f.actual_sales,
   }));
 
+  // Pools Predicted + Actual regardless of the showActual toggle, so the
+  // axis never visibly shifts when that toggle is switched — only when the
+  // chart data or the zero-based mode itself changes.
   const yDomain = useMemo(() => {
-    const values = chartData.flatMap(d => (showActual && d.Actual != null) ? [d.Predicted, d.Actual] : [d.Predicted]);
-    return niceDomain(values);
-  }, [chartData, showActual]); // eslint-disable-line react-hooks/exhaustive-deps
+    const values = seriesValues(chartData);
+    return zeroBased ? niceDomain(values) : focusedDomain(values);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chartData, zeroBased]);
 
   if (loading) return (
     <div className="animate-fadeIn">
@@ -490,32 +702,30 @@ export default function ForecastChart({ selectedStore, forecastType, handoffPeri
   const minPredictedRow = forecasts.reduce((best, f) => (f.prediction < best.prediction ? f : best), forecasts[0]);
 
   const rowsWithActual = forecasts.filter(f => f.actual_sales != null);
+  const missingActualCount = forecasts.length - rowsWithActual.length;
+  const zeroActualCount = rowsWithActual.filter(f => f.actual_sales === 0).length;
   const totalActual = rowsWithActual.reduce((s, f) => s + f.actual_sales, 0);
   const mae = computeMAE(forecasts);
   const mape = computeMAPE(forecasts);
 
   const rowMetrics = forecasts.map((f, i) => {
     const previous = i > 0 ? forecasts[i - 1] : null;
-    const predicted = Math.round(f.prediction);
-    const change = previous ? computeChange(f, previous) : null;
-    const changeLabel = !previous ? 'Starting period' : (change ? `${change.pct >= 0 ? '+' : MINUS}${Math.abs(change.pct).toFixed(1)}%` : 'N/A');
-    const trend = !previous ? 'Starting period' : (change ? classifyTrend(change.pct) : 'No material change');
-
+    const change = describePeriodChange(f, previous);
     const hasActual = f.actual_sales != null;
-    const actual = hasActual ? Math.round(f.actual_sales) : null;
-    const diff = hasActual ? predicted - actual : null;
-    const ape = hasActual && actual !== 0 ? (Math.abs(diff) / Math.abs(actual)) * 100 : null;
+    const diff = hasActual ? f.prediction - f.actual_sales : null;
+    const ape = hasActual && f.actual_sales !== 0 ? (Math.abs(diff) / Math.abs(f.actual_sales)) * 100 : null;
+    const direction = hasActual ? classifyResult(f.prediction, f.actual_sales) : null;
 
     return {
       period: f.period,
-      periodLabel: formatPeriodLabel(f.period, forecastType),
-      predictedLabel: predicted.toLocaleString('en-US'),
-      changeLabel,
-      trend,
-      actualLabel: hasActual ? actual.toLocaleString('en-US') : 'N/A',
-      differenceLabel: hasActual ? `${diff >= 0 ? '+' : MINUS}${Math.abs(diff).toLocaleString('en-US')}` : 'N/A',
-      apeLabel: hasActual ? (actual !== 0 ? `${ape.toFixed(1)}%` : 'N/A — zero actual sales') : 'N/A',
-      result: hasActual ? classifyResult(predicted, actual) : null,
+      periodLabel: formatTablePeriod(f.period, forecastType),
+      predictedLabel: Math.round(f.prediction).toLocaleString('en-US'),
+      changeLabel: change.text,
+      hasActual,
+      actualLabel: hasActual ? Math.round(f.actual_sales).toLocaleString('en-US') : 'Unavailable',
+      differenceLabel: hasActual ? `${diff >= 0 ? '+' : MINUS}${Math.abs(Math.round(diff)).toLocaleString('en-US')}` : 'Unavailable',
+      apeLabel: hasActual ? (f.actual_sales !== 0 ? `${ape.toFixed(1)}%` : 'Undefined — zero actual') : 'Unavailable',
+      direction,
     };
   });
 
@@ -532,51 +742,35 @@ export default function ForecastChart({ selectedStore, forecastType, handoffPeri
     : (period) => SHORT_MONTH_YEAR_FMT.format(toDate(period));
 
   const dateRange = formatDateRange(forecasts.map(f => f.period), forecastType);
+  const typeLabel = forecastType === 'weekly' ? 'Weekly' : 'Monthly';
 
   const handleDownload = () => {
     const csv = buildCsv(forecasts, forecastType, showActual);
-    downloadCsv(csv, `forecast_store${selectedStore}_${forecastType}.csv`);
+    downloadCsv(csv, `forecast_store${selectedStore}_${forecastType}${showActual ? '_comparison' : ''}.csv`);
   };
+
+  const maeUnavailableText = mae == null ? `Unavailable — ${unavailableReason(forecasts)}` : null;
+  const mapeUnavailableText = mape == null ? `Unavailable — ${unavailableReason(forecasts, { requireNonZero: true })}` : null;
+
+  // Concise, data-driven scope line — never a hard-coded store/date/count —
+  // replacing the earlier generic "not a measure of overall performance"
+  // wording with a statement that names what's actually being summarised.
+  const periodUnit = forecastType === 'weekly' ? 'week' : 'month';
+  const periodNoun = forecasts.length === 1 ? periodUnit : `${periodUnit}s`;
+  const scopeText = showActual
+    ? `Error metrics reflect Store ${selectedStore}'s ${forecasts.length} displayed ${periodNoun} of comparison.`
+    : `Summary for Store ${selectedStore} across ${forecasts.length} displayed ${periodNoun}.`;
 
   return (
     <div className="animate-fadeIn">
       <PageHeader
         icon={TrendingUp}
         title={`Forecast Analysis — Store ${selectedStore}`}
-        subtitle={`Explore ${forecasts.length} precomputed ${forecastType} predictions across the historical evaluation period.`}
+        subtitle={`Historical test predictions · ${typeLabel} · ${dateRange} · ${forecasts.length} periods`}
+        className="mb-4"
       />
 
-      <div className="flex items-center gap-2 flex-wrap text-xs text-gray-500 dark:text-gray-400 mb-6 -mt-2">
-        <span className="badge bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
-          {forecastType === 'weekly' ? 'Weekly' : 'Monthly'}
-        </span>
-        <span aria-hidden="true">·</span>
-        <span>{dateRange}</span>
-        <span aria-hidden="true">·</span>
-        <span className="badge bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">XGBoost</span>
-        <span aria-hidden="true">·</span>
-        <span className="badge bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">Historical test predictions</span>
-      </div>
-
-      <AboutSection forecastType={forecastType} />
-
-      <div className="flex items-center justify-between gap-3 flex-wrap mb-6" aria-live="polite">
-        <div className="flex items-center gap-2 flex-wrap">
-          <p className="text-secondary text-xs">
-            {showActual
-              ? 'Actual sales are displayed for retrospective model evaluation only. They were not used as model inputs or sent to the recommendation system.'
-              : 'Viewing predicted sales only. Actual sales remain hidden until retrospective comparison is enabled.'}
-          </p>
-          {showActual && (
-            <span className="badge bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400">
-              Historical evaluation
-            </span>
-          )}
-        </div>
-        <ComparisonSwitch showActual={showActual} onToggle={() => setShowActual(s => !s)} />
-      </div>
-
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
         {!showActual ? (
           <>
             <KpiCard
@@ -587,6 +781,7 @@ export default function ForecastChart({ selectedStore, forecastType, handoffPeri
               sublabel={`Across ${forecasts.length} ${forecastType} predictions`}
             />
             <KpiCard
+              dense
               label="Average prediction"
               value={Math.round(avgPredicted).toLocaleString('en-US')}
               icon={BarChart3}
@@ -594,14 +789,16 @@ export default function ForecastChart({ selectedStore, forecastType, handoffPeri
               sublabel={forecastType === 'weekly' ? 'Average per week' : 'Average per month'}
             />
             <KpiCard
-              label="Highest forecast"
+              dense
+              label="Highest prediction"
               value={Math.round(maxPredictedRow.prediction).toLocaleString('en-US')}
               icon={ArrowUp}
-              tone="success"
+              tone="neutral"
               sublabel={formatShortPeriod(maxPredictedRow.period, forecastType)}
             />
             <KpiCard
-              label="Lowest forecast"
+              dense
+              label="Lowest prediction"
               value={Math.round(minPredictedRow.prediction).toLocaleString('en-US')}
               icon={ArrowDown}
               tone="neutral"
@@ -615,50 +812,67 @@ export default function ForecastChart({ selectedStore, forecastType, handoffPeri
               value={Math.round(totalPredicted).toLocaleString('en-US')}
               icon={TrendingUp}
               tone="primary"
-              sublabel={`Across ${forecasts.length} ${forecastType} predictions`}
+              sublabel={`Across all ${forecasts.length} displayed periods`}
             />
             <KpiCard
+              dense
               label="Total actual sales"
               value={Math.round(totalActual).toLocaleString('en-US')}
               icon={BarChart3}
               tone="neutral"
-              sublabel={`Across ${rowsWithActual.length} ${forecastType} periods`}
+              sublabel={missingActualCount > 0
+                ? `Across ${rowsWithActual.length} of ${forecasts.length} periods with recorded sales`
+                : `Across ${rowsWithActual.length} ${forecastType} periods`}
             />
             <KpiCard
-              label="Displayed-period MAE"
-              value={mae != null ? Math.round(mae).toLocaleString('en-US') : 'N/A'}
-              icon={Zap}
+              dense
+              label="Average absolute error"
+              value={mae != null ? Math.round(mae).toLocaleString('en-US') : maeUnavailableText}
+              icon={Activity}
               tone="neutral"
-              tooltip="Mean absolute difference between actual and predicted sales across the periods currently displayed."
+              tooltip="Also known as MAE (Mean Absolute Error): the mean absolute difference between recorded and predicted sales across the displayed periods."
             />
             <KpiCard
-              label="Displayed-period MAPE"
-              value={mape != null ? `${mape.toFixed(1)}%` : 'N/A — all periods have zero actual sales'}
-              icon={Target}
+              dense
+              label="Average absolute percentage error"
+              value={mape != null ? `${mape.toFixed(1)}%` : mapeUnavailableText}
+              icon={Percent}
               tone="neutral"
-              tooltip="Mean absolute percentage error across displayed periods with non-zero actual sales. Periods with zero actual sales are excluded."
+              tooltip={`Also known as MAPE (Mean Absolute Percentage Error). Excludes periods with zero actual sales (${zeroActualCount} excluded here) because the percentage is undefined. This is not accuracy — 100% minus MAPE is not a valid accuracy figure.`}
             />
           </>
         )}
       </div>
 
+      <p className="text-secondary text-xs mb-6">
+        {scopeText}
+        {showActual && missingActualCount > 0 && (
+          <> Recorded sales are unavailable for {missingActualCount} of {forecasts.length} periods; totals compare
+            the {rowsWithActual.length} matching periods only.</>
+        )}
+      </p>
+
       <div className="card mb-6">
-        <div className="mb-1">
-          <h2 className="card-title">
-            {showActual ? 'Predicted and actual sales over time' : 'Predicted sales over time'}
-          </h2>
-          <p className="text-secondary text-xs mt-0.5">
-            {forecasts.length} {forecastType} predictions · {dateRange}
-          </p>
+        <div className="flex items-start justify-between gap-3 flex-wrap mb-1">
+          <div>
+            <h2 className="card-title">
+              {showActual ? 'Predicted and actual sales over time' : 'Predicted sales over time'}
+            </h2>
+            <p className="text-secondary text-xs mt-0.5">
+              {forecasts.length} {forecastType} predictions · {dateRange}
+            </p>
+          </div>
+          <ComparisonSwitch showActual={showActual} onToggle={() => setShowActual(s => !s)} />
         </div>
 
         <div className="h-72 mt-4">
           <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={chartData} margin={{ top: 10, right: 16, left: 0, bottom: 26 }}>
+            <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: 4, bottom: 26 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={cc.grid} vertical={false} />
               <XAxis
                 dataKey="period"
                 interval={0}
+                padding={{ left: 12, right: 12 }}
                 tick={mobileTickIndices
                   ? (p) => (!mobileTickIndices.has(p.index) ? null : (
                       <text x={p.x} y={p.y + 12} textAnchor="middle" fontSize={11} fill={cc.axisTick}>
@@ -683,12 +897,10 @@ export default function ForecastChart({ selectedStore, forecastType, handoffPeri
                 }}
               />
               <Tooltip content={<ForecastTooltip forecasts={forecasts} forecastType={forecastType} showActual={showActual} />} />
-              <Area type="linear" dataKey="Predicted" stroke="none" fill={predictedColor}
-                    fillOpacity={0.08} isAnimationActive={false} />
               {showActual && (
                 <Line type="linear" dataKey="Actual" stroke={actualColor} strokeWidth={2}
                       strokeDasharray="6 3" dot={{ r: 3, fill: actualColor, strokeWidth: 0 }}
-                      isAnimationActive={false} connectNulls />
+                      isAnimationActive={false} />
               )}
               <Line
                 type="linear"
@@ -696,6 +908,12 @@ export default function ForecastChart({ selectedStore, forecastType, handoffPeri
                 stroke={predictedColor}
                 strokeWidth={2.5}
                 isAnimationActive={false}
+                // The persistent selected marker (a solid filled disc with a
+                // background-colour halo) is drawn here, independent of
+                // hover — it never moves or disappears while a different
+                // point is hovered. The hover preview uses a visually
+                // distinct hollow-ring `activeDot` below, so a reader can
+                // never mistake "what I'm hovering" for "what is selected".
                 dot={(dotProps) => {
                   if (!dotProps.payload) return null;
                   const isSelected = dotProps.payload.period === effectivePeriod;
@@ -711,6 +929,7 @@ export default function ForecastChart({ selectedStore, forecastType, handoffPeri
                     />
                   );
                 }}
+                activeDot={{ r: 5, fill: cc.tooltip.background, stroke: predictedColor, strokeWidth: 2 }}
                 label={(labelProps) => {
                   if (labelProps.value == null || !labelProps.payload || labelProps.payload.period !== effectivePeriod) return null;
                   return (
@@ -742,19 +961,44 @@ export default function ForecastChart({ selectedStore, forecastType, handoffPeri
           )}
         </div>
 
+        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+          {yDomain[0] > 0 && (
+            <p className="text-[11px] text-gray-500 dark:text-gray-400">
+              Y-axis starts at {compactNumber.format(yDomain[0])}, not zero.
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={() => setZeroBased(z => !z)}
+            aria-pressed={zeroBased}
+            className="text-[11px] font-medium text-gray-500 dark:text-gray-400 hover:text-indigo-600
+                       dark:hover:text-indigo-400 focus:outline-none focus-visible:ring-2
+                       focus-visible:ring-indigo-400 rounded min-h-[44px] px-1 ml-auto"
+          >
+            {zeroBased ? 'Show focused range' : 'Start at zero'}
+          </button>
+        </div>
+
         <PeriodNavigator
           forecasts={forecasts}
           effectivePeriod={effectivePeriod}
           forecastType={forecastType}
           onSelect={setSelectedPeriod}
         />
-
-        <p className="text-secondary text-xs mt-3">
-          {showActual ? buildComparisonSummary(forecasts) : buildForecastSummary(forecasts, forecastType)}
-        </p>
       </div>
 
-      <div className="card">
+      <SelectedPeriodPanel
+        forecasts={forecasts}
+        effectivePeriod={effectivePeriod}
+        requestedPeriod={selectedPeriod}
+        forecastType={forecastType}
+        showActual={showActual}
+        selectedStore={selectedStore}
+        setActivePage={setActivePage}
+        setHandoffPeriod={setHandoffPeriod}
+      />
+
+      <div className="card mb-6">
         <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
           <h2 className="section-title mb-0">Period breakdown</h2>
           <button
@@ -772,31 +1016,29 @@ export default function ForecastChart({ selectedStore, forecastType, handoffPeri
           <table className="w-full text-sm">
             <thead>
               <tr className="table-header">
-                <th scope="col" className="px-4 py-2 text-left rounded-l-xl">Period</th>
+                <th scope="col" className="px-3 py-2 text-left rounded-l-xl whitespace-nowrap">
+                  {forecastType === 'weekly' ? 'Week beginning' : 'Month'}
+                </th>
                 {!showActual ? (
                   <>
-                    <th scope="col" className="px-4 py-2 text-right">Predicted sales</th>
-                    <th scope="col" className="px-4 py-2 text-right">Change from previous</th>
-                    <th
-                      scope="col"
-                      className="px-4 py-2 text-center rounded-r-xl"
-                      title={`Quick-scan direction for the change in the previous column. A change of less than ${TREND_THRESHOLD_PCT}% is shown as no material change.`}
-                    >
-                      Trend
-                    </th>
+                    <th scope="col" className="px-3 py-2 text-right whitespace-nowrap">Predicted sales</th>
+                    <th scope="col" className="px-3 py-2 text-right rounded-r-xl whitespace-nowrap">Change from previous prediction</th>
                   </>
                 ) : (
                   <>
-                    <th scope="col" className="px-4 py-2 text-right">Predicted</th>
-                    <th scope="col" className="px-4 py-2 text-right">Actual</th>
-                    <th scope="col" className="px-4 py-2 text-right">Difference</th>
-                    <th scope="col" className="px-4 py-2 text-right">Absolute % error</th>
-                    <th
-                      scope="col"
-                      className="px-4 py-2 text-left rounded-r-xl"
-                      title={`"Close forecast" means an absolute percentage error of ${CLOSE_FORECAST_THRESHOLD_PCT}% or less — an interface interpretation rule for this page's display, not a model-evaluation standard.`}
-                    >
-                      Result
+                    <th scope="col" className="px-3 py-2 text-right whitespace-nowrap">Predicted sales</th>
+                    <th scope="col" className="px-3 py-2 text-right whitespace-nowrap">Actual sales</th>
+                    <th scope="col" className="px-3 py-2 text-right whitespace-nowrap">
+                      Predicted {MINUS} actual
+                      <HeaderHint text="Positive means the prediction was higher than recorded sales; negative means it was lower." />
+                    </th>
+                    <th scope="col" className="px-3 py-2 text-right whitespace-nowrap">
+                      Absolute % error
+                      <HeaderHint text="The absolute difference as a percentage of actual sales. Undefined when actual sales are zero." />
+                    </th>
+                    <th scope="col" className="px-3 py-2 text-left rounded-r-xl whitespace-nowrap">
+                      Direction
+                      <HeaderHint text="Above actual: the prediction was higher than recorded sales. Below actual: lower. Matches actual: exactly equal. This is a factual label, not a validated measure of forecast quality." />
                     </th>
                   </>
                 )}
@@ -819,34 +1061,35 @@ export default function ForecastChart({ selectedStore, forecastType, handoffPeri
                       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedPeriod(row.period); }
                     }}
                   >
-                    <td className="px-4 py-2 font-medium text-gray-700 dark:text-gray-200">{row.periodLabel}</td>
+                    <td className="px-3 py-2 font-medium text-gray-700 dark:text-gray-200 whitespace-nowrap">{row.periodLabel}</td>
                     {!showActual ? (
                       <>
-                        <td className="px-4 py-2 text-right tabular-nums font-semibold text-indigo-600 dark:text-indigo-400">
+                        <td className="px-3 py-2 text-right tabular-nums font-semibold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
                           {row.predictedLabel}
                         </td>
-                        <td className="px-4 py-2 text-right tabular-nums text-gray-600 dark:text-gray-300">
+                        <td className="px-3 py-2 text-right tabular-nums text-gray-600 dark:text-gray-300 whitespace-nowrap">
                           {row.changeLabel}
                         </td>
-                        <td className="px-4 py-2 text-center"><TrendBadge trend={row.trend} /></td>
                       </>
                     ) : (
                       <>
-                        <td className="px-4 py-2 text-right tabular-nums font-semibold text-indigo-600 dark:text-indigo-400">
+                        <td className="px-3 py-2 text-right tabular-nums font-semibold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
                           {row.predictedLabel}
                         </td>
-                        <td className="px-4 py-2 text-right tabular-nums text-gray-800 dark:text-gray-100">
+                        <td className="px-3 py-2 text-right tabular-nums text-gray-800 dark:text-gray-100 whitespace-nowrap">
                           {row.actualLabel}
                         </td>
-                        <td className="px-4 py-2 text-right tabular-nums text-gray-600 dark:text-gray-300">
+                        <td className="px-3 py-2 text-right tabular-nums text-gray-600 dark:text-gray-300 whitespace-nowrap">
                           {row.differenceLabel}
                         </td>
-                        <td className="px-4 py-2 text-right tabular-nums text-gray-500 dark:text-gray-400">
+                        <td className="px-3 py-2 text-right tabular-nums text-gray-500 dark:text-gray-400 whitespace-nowrap">
                           {row.apeLabel}
                         </td>
-                        <td className="px-4 py-2">
-                          {row.result && (
-                            <span className={`badge ${RESULT_BADGE[row.result] || ''}`}>{row.result}</span>
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          {row.direction ? (
+                            <span className={`badge whitespace-nowrap ${DIRECTION_BADGE[row.direction] || ''}`}>{row.direction}</span>
+                          ) : (
+                            <span className="badge whitespace-nowrap bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">Unavailable</span>
                           )}
                         </td>
                       </>
@@ -878,25 +1121,23 @@ export default function ForecastChart({ selectedStore, forecastType, handoffPeri
                     : 'border-gray-100 dark:border-gray-700/60'
                 }`}
               >
-                <p className="font-semibold text-gray-700 dark:text-gray-200 mb-1.5">{row.periodLabel}</p>
+                <p className="font-semibold text-gray-700 dark:text-gray-200 mb-1.5">
+                  {forecastType === 'weekly' ? 'Week beginning ' : ''}{row.periodLabel}
+                </p>
                 <div className="space-y-1 text-gray-600 dark:text-gray-300">
                   <div className="flex justify-between">
                     <span>Predicted</span><span className="tabular-nums font-medium">{row.predictedLabel}</span>
                   </div>
                   {!showActual ? (
-                    <div className="flex justify-between items-center">
-                      <span>Change</span>
-                      <span className="flex items-center gap-1.5">
-                        <span className="tabular-nums">{row.changeLabel}</span>
-                        <TrendBadge trend={row.trend} />
-                      </span>
+                    <div className="flex justify-between">
+                      <span>Change</span><span className="tabular-nums">{row.changeLabel}</span>
                     </div>
                   ) : (
                     <>
                       <div className="flex justify-between"><span>Actual</span><span className="tabular-nums">{row.actualLabel}</span></div>
                       <div className="flex justify-between"><span>Difference</span><span className="tabular-nums">{row.differenceLabel}</span></div>
                       <div className="flex justify-between"><span>Percentage error</span><span className="tabular-nums">{row.apeLabel}</span></div>
-                      <div className="flex justify-between"><span>Result</span><span>{row.result || 'N/A'}</span></div>
+                      <div className="flex justify-between"><span>Direction</span><span>{row.direction || 'Unavailable'}</span></div>
                     </>
                   )}
                 </div>
@@ -905,6 +1146,11 @@ export default function ForecastChart({ selectedStore, forecastType, handoffPeri
           })}
         </div>
       </div>
+
+      <AboutSection
+        forecastType={forecastType}
+        closeThresholdNote={'"Matches actual" means the prediction exactly equalled recorded sales — there is no tolerance window.'}
+      />
     </div>
   );
 }
