@@ -42,21 +42,18 @@ const RECOMMENDATION_RESPONSE = {
     staffing: {
       recommendation: 'Consider reviewing rota coverage for the forecast period.',
       detail: 'The forecast suggests demand above baseline, driven mainly by promotion activity.',
-      urgency: 'medium',
       evidence_refs: ['predicted_sales', 'shap:PromoDays', 'shap:not_a_real_feature'],
       caution: 'This does not account for actual staff availability.',
     },
     stock: {
       recommendation: 'This may justify checking store-level stock readiness.',
       detail: 'Recent 12-week average sales pulled the forecast down relative to baseline.',
-      urgency: 'low',
       evidence_refs: ['shap:rolling_mean_12'],
       caution: 'Product-level demand is not available in this dataset.',
     },
     promotions: {
       recommendation: 'Consider reviewing current promotion timing.',
       detail: 'The modelled contribution of promotion activity is the largest positive driver.',
-      urgency: 'low',
       evidence_refs: ['shap:PromoDays'],
       caution: 'SHAP contribution is not evidence of a causal promotion effect.',
     },
@@ -153,7 +150,24 @@ test('the evidence preview shows the exact store, forecast type, and latest peri
   expect(screen.getByText('Week beginning 27 July 2015')).toBeInTheDocument();
   expect(screen.getByText('26,872')).toBeInTheDocument();
   expect(screen.queryByText(/most recent period/i)).not.toBeInTheDocument();
-  expect(screen.getByText('Latest forecast only')).toBeInTheDocument();
+  expect(screen.getByText('Latest available prediction')).toBeInTheDocument();
+});
+
+test('the evidence preview shows the number of SHAP features available and drivers sent to Claude', async () => {
+  mockHappyPath();
+  await renderAgent();
+
+  expect(screen.getByText('45')).toBeInTheDocument(); // shap_feature_count
+  expect(screen.getByText('2')).toBeInTheDocument();   // shap_drivers.length
+  expect(screen.getByText('Confirmed')).toBeInTheDocument(); // reconciliation status
+});
+
+test('the evidence preview shows the selected historical period, not just "latest"', async () => {
+  mockHappyPath({ evidence: { ...EVIDENCE, period: '2015-07-13' } });
+  await renderAgent({ handoffPeriod: '2015-07-13' });
+
+  expect(screen.getByText('Selected period')).toBeInTheDocument();
+  expect(screen.getByText('Week beginning 13 July 2015')).toBeInTheDocument();
 });
 
 test('no actual sales figure is ever displayed on the page', async () => {
@@ -262,6 +276,41 @@ test('renders staffing, stock, and promotion cards with evidence and a caution, 
   expect(screen.getAllByText(/A manager should review operational data/).length).toBeGreaterThan(0);
 });
 
+test('no urgency, priority, or risk-level labels are ever rendered on generated cards', async () => {
+  mockHappyPath();
+  client.post.mockResolvedValue({ data: RECOMMENDATION_RESPONSE });
+  await renderAgent();
+  await waitFor(() => expect(screen.getByRole('button', { name: /generate ai recommendations/i })).toBeEnabled());
+  await act(async () => {
+    fireEvent.click(screen.getByRole('button', { name: /generate ai recommendations/i }));
+  });
+  await screen.findByText('Staffing');
+
+  expect(screen.queryByText(/urgency/i)).not.toBeInTheDocument();
+  expect(screen.queryByText(/^high$/i)).not.toBeInTheDocument();
+  expect(screen.queryByText(/^medium$/i)).not.toBeInTheDocument();
+  expect(screen.queryByText(/^low$/i)).not.toBeInTheDocument();
+  expect(screen.queryByText(/priority/i)).not.toBeInTheDocument();
+  expect(screen.queryByText(/risk level/i)).not.toBeInTheDocument();
+  expect(screen.queryByText(/action level/i)).not.toBeInTheDocument();
+});
+
+test('generated cards show the Suggested review / Why this is suggested / Caution structure', async () => {
+  mockHappyPath();
+  client.post.mockResolvedValue({ data: RECOMMENDATION_RESPONSE });
+  await renderAgent();
+  await waitFor(() => expect(screen.getByRole('button', { name: /generate ai recommendations/i })).toBeEnabled());
+  await act(async () => {
+    fireEvent.click(screen.getByRole('button', { name: /generate ai recommendations/i }));
+  });
+  await screen.findByText('Staffing');
+
+  expect(screen.getAllByText('Suggested review').length).toBe(3);
+  expect(screen.getAllByText('Why this is suggested').length).toBe(3);
+  expect(screen.getAllByText('Caution / limitation').length).toBe(3);
+  expect(screen.getByText('Consider reviewing rota coverage for the forecast period.')).toBeInTheDocument();
+});
+
 test('shows a limitation instead of fabricated detail, and renders the risks/uncertainties section', async () => {
   mockHappyPath();
   client.post.mockResolvedValue({ data: RECOMMENDATION_RESPONSE });
@@ -361,7 +410,7 @@ test('changing forecast type clears a prior recommendation result', async () => 
 
 // ---- Post-generation controls ----
 
-test('regenerate, copy, and download all work after a successful generation', async () => {
+test('copy and download work after a successful generation, and the generate button can be clicked again to regenerate', async () => {
   mockHappyPath();
   client.post.mockResolvedValue({ data: RECOMMENDATION_RESPONSE });
   await renderAgent();
@@ -371,8 +420,10 @@ test('regenerate, copy, and download all work after a successful generation', as
   });
   expect(await screen.findByText(/Predicted demand is above the model baseline/)).toBeInTheDocument();
 
+  expect(screen.queryByRole('button', { name: /^regenerate$/i })).not.toBeInTheDocument();
+
   await act(async () => {
-    fireEvent.click(screen.getByRole('button', { name: /^regenerate$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /generate ai recommendations/i }));
   });
   expect(client.post).toHaveBeenCalledTimes(2);
 
@@ -407,8 +458,29 @@ test('the pipeline strip lets a manager navigate to Forecast/Explanation and bac
   });
   await screen.findByText(/Predicted demand is above the model baseline/);
 
-  fireEvent.click(screen.getByRole('button', { name: /return to explanation/i }));
+  fireEvent.click(screen.getByRole('button', { name: /review shap explanation/i }));
   expect(setActivePage).toHaveBeenCalledWith('explanation');
+});
+
+test('the bottom navigation row offers Review Forecast Analysis, Review SHAP Explanation, and Return to Dashboard', async () => {
+  mockHappyPath();
+  client.post.mockResolvedValue({ data: RECOMMENDATION_RESPONSE });
+  const setActivePage = jest.fn();
+  await renderAgent({ setActivePage });
+  await waitFor(() => expect(screen.getByRole('button', { name: /generate ai recommendations/i })).toBeEnabled());
+  await act(async () => {
+    fireEvent.click(screen.getByRole('button', { name: /generate ai recommendations/i }));
+  });
+  await screen.findByText(/Predicted demand is above the model baseline/);
+
+  fireEvent.click(screen.getByRole('button', { name: /review forecast analysis/i }));
+  expect(setActivePage).toHaveBeenCalledWith('forecast');
+
+  fireEvent.click(screen.getByRole('button', { name: /review shap explanation/i }));
+  expect(setActivePage).toHaveBeenCalledWith('explanation');
+
+  fireEvent.click(screen.getByRole('button', { name: /return to dashboard/i }));
+  expect(setActivePage).toHaveBeenCalledWith('dashboard');
 });
 
 test('the transparency section reports provider, model, prompt version, and human-review requirement without exposing secrets', async () => {
@@ -451,20 +523,20 @@ test('a handed-off period is included in both the evidence request and the gener
   expect(client.post).toHaveBeenCalledWith('/agent/recommend?store_id=1&forecast_type=weekly&period=2015-07-13');
 });
 
-test('a handed-off period replaces the "Latest forecast only" badge with the specific period', async () => {
+test('a handed-off period replaces the "Latest available prediction" badge with the specific period', async () => {
   mockHappyPath({ evidence: { ...EVIDENCE, period: '2015-07-13' } });
   await renderAgent({ handoffPeriod: '2015-07-13' });
 
-  expect(screen.queryByText('Latest forecast only')).not.toBeInTheDocument();
+  expect(screen.queryByText('Latest available prediction')).not.toBeInTheDocument();
   expect(screen.getByText(/Historical period: Week beginning 13 July 2015/)).toBeInTheDocument();
 });
 
-test('with no handed-off period, behaviour is unchanged: no period param, and the "Latest forecast only" badge', async () => {
+test('with no handed-off period, behaviour is unchanged: no period param, and the "Latest available prediction" badge', async () => {
   mockHappyPath();
   await renderAgent();
 
   expect(client.get).toHaveBeenCalledWith('/agent/recommend/evidence?store_id=1&forecast_type=weekly');
-  expect(screen.getByText('Latest forecast only')).toBeInTheDocument();
+  expect(screen.getByText('Latest available prediction')).toBeInTheDocument();
 });
 
 test('a handed-off period is consumed once and cleared, so a later direct visit does not reuse it', async () => {

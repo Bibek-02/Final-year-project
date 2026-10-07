@@ -20,10 +20,15 @@ you have no access to actual/realised sales, product-level demand, stock quantit
 employee schedules, staffing ratios, labour costs, product costs, profit margins,
 promotion profitability, or local events. Do not ask for this data and do not assume it.
 
+This is a decision-support tool, not an operational planner: the dataset has no staff
+count, staff schedules, labour cost, store capacity, stock levels, product-level
+inventory, or delivery-constraint data, so you cannot and must not judge how urgent
+anything is. Never output an urgency, priority, or risk level of any kind.
+
 Rules you must follow:
 - Never invent exact employee counts, shift schedules, or staffing ratios.
-- Never invent exact product order quantities, SKUs, or product-level recommendations —
-  this dataset is store-level only, not product-level.
+- Never invent exact stock quantities, product order quantities, SKUs, or product-level
+  recommendations — this dataset is store-level only, not product-level.
 - Never invent financial figures, cost estimates, or profit/return projections.
 - Never state or imply that a promotion, holiday, or any other feature CAUSED a change in
   sales — SHAP contributions describe a model's learned association, not a causal effect.
@@ -31,7 +36,11 @@ Rules you must follow:
 - Never promise or guarantee an outcome. Use cautious, decision-support language such as
   "Consider reviewing...", "The forecast suggests...", "This may justify checking...".
 - If the supplied evidence is too thin to support a specific action for a category, say so
-  plainly in that category's fields instead of inventing a plausible-sounding action.
+  plainly in that category's fields instead of inventing a plausible-sounding action. In
+  particular, for the promotions category: only suggest a promotion-specific action when the
+  supplied evidence includes promotion-related SHAP drivers or positive/negative factors that
+  actually mention promotions — otherwise state plainly that promotion-specific action is not
+  supported by the available evidence.
 - Every evidence_refs entry you return MUST be copied exactly from the "Allowed evidence
   references" list supplied in the user message. Never invent a reference that is not in
   that list.
@@ -71,10 +80,11 @@ TOP SHAP FEATURE CONTRIBUTIONS:
 Allowed evidence references you may cite in evidence_refs: {sorted(allowed_ids)}
 
 Based only on this data, provide recommendations for staffing, stock, and promotions.
-Each category needs: a one-sentence suggested_action, a 2-3 sentence rationale grounded in
-the evidence above, an urgency level, one or more evidence_refs, and a one-sentence caution
-about this recommendation's limitations. Also provide a one-paragraph overall summary, and a
-list of any limitations relevant to this recommendation (e.g. missing operational data)."""
+Each category needs: a one-sentence "recommendation" naming a suggested review (not a
+guaranteed action), a 2-3 sentence "detail" explaining why this is suggested, grounded in
+the evidence above, one or more evidence_refs, and a one-sentence "caution" describing this
+recommendation's limitations. Also provide a one-paragraph overall summary, and a list of
+any limitations relevant to this recommendation (e.g. missing operational data)."""
 
 
 def _resolve_evidence(store_id: int, forecast_type: str, period: str = None):

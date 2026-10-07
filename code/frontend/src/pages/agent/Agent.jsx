@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Bot, Lightbulb, Users, Package, Tag, TrendingUp, Search, ArrowRight, ArrowLeft,
-  AlertCircle, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, Copy, Download,
-  RefreshCw, ShieldAlert, Info,
+  AlertTriangle, ChevronDown, ChevronUp, Copy, Download,
+  ShieldAlert, Info, Home,
 } from 'lucide-react';
 import client from '../../api/client';
 import { useApi } from '../../hooks/useApi';
@@ -98,12 +98,6 @@ const DATA_LIMITATIONS = [
   'Local events not represented in the dataset',
 ];
 
-const URGENCY_CONFIG = {
-  high  : { classes: 'bg-red-100 text-red-700 border border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/30',     Icon: AlertCircle,   iconClass: 'text-status-critical dark:text-red-400' },
-  medium: { classes: 'bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/30', Icon: AlertTriangle, iconClass: 'text-status-warning dark:text-amber-400'  },
-  low   : { classes: 'bg-green-100 text-green-700 border border-green-200 dark:bg-green-500/10 dark:text-green-400 dark:border-green-500/30', Icon: CheckCircle2,  iconClass: 'text-status-good dark:text-green-400'     },
-};
-
 const RECOMMENDATION_CARDS = [
   { key: 'staffing',   label: 'Staffing',   Icon: Users,   badge: 'bg-indigo-600' },
   { key: 'stock',      label: 'Stock',      Icon: Package, badge: 'bg-semantic-success' },
@@ -133,12 +127,18 @@ function ActionButton({ icon: Icon, children, onClick, disabled }) {
 
 // Restrained, clickable pipeline strip: Forecast and Explanation are real
 // navigation (setActivePage), AI Recommendations is the current, inert step.
-function PipelineNav({ setActivePage }) {
+// Hands off the selected period (when this page has one) so the receiving
+// page seeds the same historical period instead of reverting to its latest.
+function PipelineNav({ setActivePage, setHandoffPeriod, selectedPeriod }) {
+  const goTo = (page) => () => {
+    if (selectedPeriod) setHandoffPeriod?.(selectedPeriod);
+    setActivePage?.(page);
+  };
   return (
     <nav aria-label="Recommendation pipeline" className="flex items-center gap-2 text-xs text-gray-400 mb-6 flex-wrap">
       <button
         type="button"
-        onClick={() => setActivePage?.('forecast')}
+        onClick={goTo('forecast')}
         disabled={!setActivePage}
         className="flex items-center gap-1.5 px-1.5 py-1 rounded-md hover:text-gray-600 dark:hover:text-gray-200
                    hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors focus:outline-none
@@ -149,7 +149,7 @@ function PipelineNav({ setActivePage }) {
       <ArrowRight size={12} className="flex-shrink-0" />
       <button
         type="button"
-        onClick={() => setActivePage?.('explanation')}
+        onClick={goTo('explanation')}
         disabled={!setActivePage}
         className="flex items-center gap-1.5 px-1.5 py-1 rounded-md hover:text-gray-600 dark:hover:text-gray-200
                    hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors focus:outline-none
@@ -184,10 +184,14 @@ function EvidencePreview({ evidence, loading, error, onRetry, selectedPeriod, fo
         <Search size={16} className="text-indigo-600 dark:text-indigo-400" />
         <h2 className="card-title mb-0">Evidence used for this recommendation</h2>
       </div>
-      <p className="text-secondary text-xs mb-4">
+      <p className="text-secondary text-xs mb-1">
         {selectedPeriod
-          ? `Recommendations use the forecast for ${formatSelectedPeriod(selectedPeriod, forecastType)} — the period selected before opening this page.`
-          : 'Recommendations use the latest available forecast for the selected store and forecast type.'}
+          ? `Claude uses the selected XGBoost prediction for ${formatSelectedPeriod(selectedPeriod, forecastType)} and its precomputed local SHAP explanation to generate decision-support suggestions.`
+          : 'Claude uses the latest available XGBoost prediction and its precomputed local SHAP explanation to generate decision-support suggestions.'}
+      </p>
+      <p className="text-secondary text-xs mb-4">
+        This page uses saved held-out predictions and precomputed SHAP evidence. It does not
+        retrain the model or calculate SHAP at runtime.
       </p>
 
       {loading && <SkeletonTable rows={8} cols={2} />}
@@ -207,9 +211,12 @@ function EvidencePreview({ evidence, loading, error, onRetry, selectedPeriod, fo
         <dl className="grid grid-cols-1 sm:grid-cols-2 sm:gap-x-8">
           <EvidenceRow label="Store" value={`Store ${evidence.store_id}`} />
           <EvidenceRow label="Forecast type" value={evidence.forecast_type === 'weekly' ? 'Weekly' : 'Monthly'} />
-          <EvidenceRow label="Forecast period" value={formatSelectedPeriod(evidence.period, evidence.forecast_type)} />
+          <EvidenceRow label="Selected period" value={formatSelectedPeriod(evidence.period, evidence.forecast_type)} />
           <EvidenceRow label="Predicted sales" value={formatRounded(evidence.predicted_sales)} />
           <EvidenceRow label="Forecast model" value={evidence.forecast_model} />
+          <EvidenceRow label="Explanation source" value={evidence.explanation_source} />
+          <EvidenceRow label="SHAP features available" value={evidence.shap_feature_count?.toLocaleString('en-US')} />
+          <EvidenceRow label="SHAP drivers sent to Claude" value={evidence.shap_drivers?.length} />
           <EvidenceRow
             label="Strongest increase"
             value={evidence.top_positive_drivers[0]
@@ -222,7 +229,7 @@ function EvidencePreview({ evidence, loading, error, onRetry, selectedPeriod, fo
               ? `${evidence.top_negative_drivers[0].readable_feature}, ${formatSigned(evidence.top_negative_drivers[0].shap_value)}`
               : 'None'}
           />
-          <EvidenceRow label="Explanation source" value={evidence.explanation_source} />
+          <EvidenceRow label="Reconciliation status" value={evidence.reconciliation_ok ? 'Confirmed' : 'Not reconciled'} />
         </dl>
       )}
 
@@ -351,38 +358,44 @@ function EvidenceUsedList({ refs, evidence }) {
   );
 }
 
+function FieldLabel({ children }) {
+  return (
+    <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-1">
+      {children}
+    </p>
+  );
+}
+
 function RecommendationCategoryCard({ label, Icon, badge, item, evidence }) {
-  const cfg = URGENCY_CONFIG[item?.urgency];
-  const UrgencyIcon = cfg?.Icon;
   return (
     <div className="card card-hover">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${badge}`}>
-            <Icon size={16} className="text-white" />
-          </div>
-          <h3 className="font-bold text-gray-800 dark:text-gray-100">{label}</h3>
+      <div className="flex items-center gap-2 mb-3">
+        <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${badge}`}>
+          <Icon size={16} className="text-white" />
         </div>
-        {item?.urgency && (
-          <span className={`badge text-xs gap-1 ${cfg?.classes || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
-            {UrgencyIcon && <UrgencyIcon size={12} className={cfg.iconClass} />}
-            {item.urgency}
-          </span>
-        )}
+        <h3 className="font-bold text-gray-800 dark:text-gray-100">{label}</h3>
       </div>
-      <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 leading-snug">
+
+      <FieldLabel>Suggested review</FieldLabel>
+      <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3 leading-snug">
         {item?.recommendation}
       </p>
+
+      <FieldLabel>Why this is suggested</FieldLabel>
       <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
         {item?.detail}
       </p>
+
       <EvidenceUsedList refs={item?.evidence_refs} evidence={evidence} />
+
       {item?.caution && (
-        <p className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700/60 text-xs
-                      text-amber-700 dark:text-amber-400 flex items-start gap-1.5">
-          <AlertTriangle size={13} className="flex-shrink-0 mt-0.5" />
-          {item.caution}
-        </p>
+        <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700/60">
+          <FieldLabel>Caution / limitation</FieldLabel>
+          <p className="text-xs text-amber-700 dark:text-amber-400 flex items-start gap-1.5">
+            <AlertTriangle size={13} className="flex-shrink-0 mt-0.5" />
+            {item.caution}
+          </p>
+        </div>
       )}
     </div>
   );
@@ -434,10 +447,10 @@ function buildExportText(result, evidence, selectedStore, forecastType) {
   RECOMMENDATION_CARDS.forEach(({ key, label }) => {
     const item = rec[key];
     if (!item) return;
-    lines.push(`${label} (urgency: ${item.urgency})`);
-    lines.push(`Suggested action: ${item.recommendation}`);
-    lines.push(`Rationale: ${item.detail}`);
-    if (item.caution) lines.push(`Caution: ${item.caution}`);
+    lines.push(label);
+    lines.push(`Suggested review: ${item.recommendation}`);
+    lines.push(`Why this is suggested: ${item.detail}`);
+    if (item.caution) lines.push(`Caution / limitation: ${item.caution}`);
     lines.push('');
   });
   if (rec.limitations?.length) {
@@ -535,6 +548,13 @@ export default function Agent({ selectedStore, forecastType, setActivePage, hand
     showToast('Recommendations downloaded.');
   };
 
+  // Preserves the selected period when navigating back to Forecast/Explanation,
+  // same one-shot handoff pattern used across the rest of the app.
+  const goToWithPeriod = (page) => () => {
+    if (selectedPeriod) setHandoffPeriod?.(selectedPeriod);
+    setActivePage?.(page);
+  };
+
   const rec = result?.recommendations;
 
   return (
@@ -543,16 +563,16 @@ export default function Agent({ selectedStore, forecastType, setActivePage, hand
         icon={Bot}
         title="AI Recommendations"
         subtitle={selectedPeriod
-          ? 'Claude uses the selected historical forecast and its local SHAP explanation to generate decision-support suggestions for staffing, stock and promotions.'
-          : 'Claude uses the latest XGBoost forecast and its local SHAP explanation to generate decision-support suggestions for staffing, stock and promotions.'}
+          ? 'Claude uses the selected XGBoost prediction and its precomputed local SHAP explanation to generate decision-support suggestions for staffing, stock and promotions.'
+          : 'Claude uses the latest available XGBoost prediction and its precomputed local SHAP explanation to generate decision-support suggestions for staffing, stock and promotions.'}
         meta={
           <span className="badge bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-500/10 dark:text-indigo-400 dark:border-indigo-500/30">
-            {selectedPeriod ? `Historical period: ${formatSelectedPeriod(selectedPeriod, forecastType)}` : 'Latest forecast only'}
+            {selectedPeriod ? `Historical period: ${formatSelectedPeriod(selectedPeriod, forecastType)}` : 'Latest available prediction'}
           </span>
         }
       />
 
-      <PipelineNav setActivePage={setActivePage} />
+      <PipelineNav setActivePage={setActivePage} setHandoffPeriod={setHandoffPeriod} selectedPeriod={selectedPeriod} />
 
       <EvidencePreview
         evidence={evidence}
@@ -631,11 +651,14 @@ export default function Agent({ selectedStore, forecastType, setActivePage, hand
           )}
 
           <div className="flex flex-wrap gap-2 mb-6">
-            <ActionButton icon={RefreshCw} onClick={generate} disabled={loadingRec}>Regenerate</ActionButton>
             <ActionButton icon={Copy} onClick={handleCopy}>Copy recommendations</ActionButton>
             <ActionButton icon={Download} onClick={handleDownload}>Download recommendations</ActionButton>
             {setActivePage && (
-              <ActionButton icon={ArrowLeft} onClick={() => setActivePage('explanation')}>Return to Explanation</ActionButton>
+              <>
+                <ActionButton icon={TrendingUp} onClick={goToWithPeriod('forecast')}>Review Forecast Analysis</ActionButton>
+                <ActionButton icon={ArrowLeft} onClick={goToWithPeriod('explanation')}>Review SHAP Explanation</ActionButton>
+                <ActionButton icon={Home} onClick={() => setActivePage('dashboard')}>Return to Dashboard</ActionButton>
+              </>
             )}
           </div>
 

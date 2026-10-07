@@ -2,16 +2,10 @@ from datetime import datetime
 from pydantic import BaseModel
 from typing import Literal
 
-Urgency = Literal["high", "medium", "low"]
-
 
 class Recommendation(BaseModel):
     recommendation: str
     detail: str
-    urgency: Urgency
-    # Additive fields — Dashboard.jsx's inline RecommendationCard widget only
-    # reads `.summary`/`.urgency` off this model, so extending it here does
-    # not require any change on that page.
     evidence_refs: list[str] = []
     caution: str = ""
 

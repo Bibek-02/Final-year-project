@@ -45,7 +45,7 @@ export default function App() {
       case 'explanation': return <Explanation     {...props} />;
       // 'business' is a retired page key — redirect any lingering reference to the merged Explanation page.
       case 'business':    return <Explanation     {...props} />;
-      case 'compare':     return <ModelCompare              />;
+      case 'compare':     return <ModelCompare       selectedStore={selectedStore} setActivePage={setActivePage} />;
       case 'storeComparison': return (
         <StoreComparison
           forecastType={forecastType}

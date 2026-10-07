@@ -6,24 +6,24 @@
       "selected_model": "XGBoost",
       "target": "WeeklySales",
       "feature_count": 45,
-      "validation_mae": 2642.298,
+      "validation_mae": 2660.301,
       "test_metrics": {
-        "MAE": 2173.826,
-        "RMSE": 3181.982,
-        "MAPE": 5.334,
-        "RMSPE": 7.362
+        "MAE": 1989.39,
+        "RMSE": 2950.374,
+        "MAPE": 4.884,
+        "RMSPE": 6.802
       }
     },
     "monthly": {
       "selected_model": "XGBoost",
       "target": "MonthlySales",
       "feature_count": 41,
-      "validation_mae": 9352.965,
+      "validation_mae": 9377.573,
       "test_metrics": {
-        "MAE": 8462.312,
-        "RMSE": 11351.831,
-        "MAPE": 4.729,
-        "RMSPE": 6.283
+        "MAE": 8678.174,
+        "RMSE": 11486.236,
+        "MAPE": 4.875,
+        "RMSPE": 6.417
       }
     }
   },
