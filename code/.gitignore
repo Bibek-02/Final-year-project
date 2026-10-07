@@ -22,3 +22,6 @@ yarn-error.log*
 # OS
 .DS_Store
 Thumbs.db
+
+# Verification evidence runs (generated, not part of the codebase)
+evidence/
