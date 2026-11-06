@@ -29,6 +29,6 @@ None of these changed the recorded totals. `SUMMARY.md` mentions only the `act()
 
 Tests run in jsdom, with no real backend or browser. The log contains no real API responses. For those, see `../Backend/2026-11-05 API responses/API Responses.html`, which labels each endpoint with the frontend page that uses it. That capture does not test the pages themselves.
 
-**Later changes: these results do not cover the current frontend.** Five files were edited on 4 November and are uncommitted: `ModelCompare.test.jsx`, `ModelCompare.jsx`, `App.js`, `Sidebar.jsx` and `index.css`. One test was removed from `ModelCompare.test.jsx`, so 290 describes the 7 October run only. A fresh run is recommended.
+**Later changes: these results do not cover the current frontend.** Five files were edited on 4 November and committed later in `0028b28`: `ModelCompare.test.jsx`, `ModelCompare.jsx`, `App.js`, `Sidebar.jsx` and `index.css`. One test was removed from `ModelCompare.test.jsx`, so 290 describes the 7 October run only. A fresh run is recommended.
 
 The log includes short source excerpts in console stack traces. It is kept unchanged so that it matches the original.

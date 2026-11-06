@@ -35,5 +35,5 @@ The easiest pages to read:
 
 ## Recommended fresh runs
 
-1. Frontend tests, after committing the 4 November edits.
+1. Frontend tests on commit `0028b28` or later, which includes the 4 November edits.
 2. Backend and harness tests on that same commit, saving the commit hash and package versions with the logs.

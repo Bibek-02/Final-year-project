@@ -17,4 +17,4 @@
 
 **Left in place:** scoring packets and the scoring aid are scoring inputs, so they remain in `code/evaluation/rubric/outputs/`.
 
-The score and analysis files are uncommitted in git, so the copies here come from the working folder.
+The score and analysis files here are copies of the versions committed in `c384e7d`.
