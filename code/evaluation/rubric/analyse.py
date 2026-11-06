@@ -82,14 +82,40 @@ def compute_agreement(scoresheet: pd.DataFrame, rescore_subset: pd.DataFrame, ma
         valid = first.notna() & second.notna()
         n = int(valid.sum())
         if n == 0:
-            rows.append({"criterion": col, "n": 0, "exact_agreement_pct": np.nan, "weighted_kappa": np.nan})
+            rows.append({
+                "criterion": col, "n": 0, "exact_agreement_pct": np.nan,
+                "weighted_kappa": np.nan, "note": "",
+            })
             continue
+
         exact_pct = float((first[valid] == second[valid]).mean() * 100)
-        if first[valid].nunique() < 2 and second[valid].nunique() < 2 and (first[valid] == second[valid]).all():
+        first_const = first[valid].nunique() < 2
+        second_const = second[valid].nunique() < 2
+        note = ""
+
+        if first_const and second_const and (first[valid] == second[valid]).all():
             kappa = 1.0  # cohen_kappa_score is undefined for a single constant class; perfect agreement is 1.0
+            note = "both passes used a single constant score for this criterion"
         else:
             kappa = float(cohen_kappa_score(first[valid], second[valid], weights="quadratic"))
-        rows.append({"criterion": col, "n": n, "exact_agreement_pct": exact_pct, "weighted_kappa": kappa})
+            if first_const or second_const:
+                # The "kappa paradox": when one rater's marginal distribution is a single
+                # category, expected chance agreement collapses to exactly the observed
+                # agreement rate, forcing kappa to ~0 regardless of how well the two
+                # passes actually line up. Flagged explicitly so a near-zero kappa here
+                # isn't misread as "no reliability" — read exact_agreement_pct instead.
+                which = "first" if first_const else "second"
+                kappa = 0.0 if abs(kappa) < 1e-9 else kappa
+                note = (
+                    f"{which}-pass scores were constant on this criterion; weighted_kappa "
+                    f"is forced toward 0 by construction (the \"kappa paradox\") and is not "
+                    f"a meaningful reliability estimate here — see exact_agreement_pct instead"
+                )
+
+        rows.append({
+            "criterion": col, "n": n, "exact_agreement_pct": exact_pct,
+            "weighted_kappa": kappa, "note": note,
+        })
 
     return pd.DataFrame(rows)
 
@@ -107,33 +133,53 @@ def summarise_failures(results_path: str) -> pd.DataFrame:
     return pd.DataFrame(rows, columns=["case_id", "error"])
 
 
-LIMITATIONS_TEXT = """## Limitations
+def build_limitations_text(agreement: pd.DataFrame) -> str:
+    lines = [
+        "## Limitations", "",
+        "This evaluation has a small number of structural limitations that should be",
+        "read alongside the scores in Table 5.x:", "",
+        "- **Single rater.** All 24 cases were scored by one person (the author).",
+        "  There is no independent second rater, so the agreement figures reported",
+        "  here are *intra*-rater (the same person scoring the same 6 cases twice,",
+        "  with case identities hidden on the second pass), not *inter*-rater",
+        "  agreement between different judges.",
+        "- **Scoring interval.** The first-pass and blind-rescore passes were",
+        "  completed close together in time, not separated by the several days",
+        "  originally planned. Beyond the identity-blinding already in place, this",
+        "  raises the risk that the second pass was influenced by memory of the",
+        "  first, and should be read as a secondary caveat on the agreement",
+        "  figures above.",
+        "- **One generation per case.** Each case was generated exactly once, not",
+        "  averaged or sampled across multiple generations. Variance across repeated",
+        "  generations of the same case was not measured, so scores reflect a single",
+        "  sample of the model's output distribution per case, not its central",
+        "  tendency.",
+        "- **n = 24.** Twelve weekly and twelve monthly cases, stratified by",
+        "  predicted-sales level and promotion status (see select_cases.py and",
+        "  rubric_anchors.md for the exact stratification and the weekly/monthly",
+        "  promo-definition difference). This is enough to check for gross failure",
+        "  modes across the stratified cells, not enough to support strong",
+        "  statistical claims about population-level recommendation quality.",
+        "- **The evidence_refs_allowlist_share auto-check is post-filter only.**",
+        "  agent_service.get_recommendations() already drops any evidence reference",
+        "  not in the allowlist before this harness ever sees the output, so that",
+        "  check can only ever report 1.0 by construction — it confirms the filter is",
+        "  working, not what the model originally cited before filtering.",
+    ]
 
-This evaluation has a small number of structural limitations that should be
-read alongside the scores in Table 5.x:
+    paradox_criteria = agreement.loc[agreement["note"].str.contains("kappa paradox", na=False), "criterion"].tolist()
+    if paradox_criteria:
+        lines += [
+            f"- **Weighted kappa is near-zero on {', '.join(paradox_criteria)} despite high exact",
+            "  agreement, because one of the two rescore passes used a single constant",
+            "  score on that criterion.** This is the well-known \"kappa paradox\": when a",
+            "  rater's marginal distribution collapses to one category, the chance-agreement",
+            "  term in Cohen's kappa collapses to the observed agreement rate, forcing kappa",
+            "  toward 0 regardless of how well the two passes actually align. Read",
+            "  exact_agreement_pct for these criteria instead of weighted_kappa.",
+        ]
 
-- **Single rater.** All 24 cases were scored by one person (the author).
-  There is no independent second rater, so the agreement figures reported
-  here are *intra*-rater (the same person scoring the same 6 cases twice,
-  separated in time and with case identities hidden on the second pass), not
-  *inter*-rater agreement between different judges.
-- **One generation per case.** Each case was generated exactly once, not
-  averaged or sampled across multiple generations. Variance across repeated
-  generations of the same case was not measured, so scores reflect a single
-  sample of the model's output distribution per case, not its central
-  tendency.
-- **n = 24.** Twelve weekly and twelve monthly cases, stratified by
-  predicted-sales level and promotion status (see select_cases.py and
-  rubric_anchors.md for the exact stratification and the weekly/monthly
-  promo-definition difference). This is enough to check for gross failure
-  modes across the stratified cells, not enough to support strong
-  statistical claims about population-level recommendation quality.
-- **The evidence_refs_allowlist_share auto-check is post-filter only.**
-  agent_service.get_recommendations() already drops any evidence reference
-  not in the allowlist before this harness ever sees the output, so that
-  check can only ever report 1.0 by construction — it confirms the filter is
-  working, not what the model originally cited before filtering.
-"""
+    return "\n".join(lines) + "\n"
 
 
 def _df_to_markdown(df: pd.DataFrame) -> str:
@@ -185,7 +231,7 @@ def main():
         write_markdown_table(auto_check_rates, "Auto-check pass rates"),
         write_markdown_table(agreement, "Intra-rater agreement on the 6 re-scored cases"),
         write_markdown_table(failures, "Failed generations") if len(failures) else "### Failed generations\n\nNone.\n",
-        LIMITATIONS_TEXT,
+        build_limitations_text(agreement),
     ]
     md_path = os.path.join(common.OUTPUT_DIR, "analysis_report.md")
     with open(md_path, "w", encoding="utf-8") as f:
