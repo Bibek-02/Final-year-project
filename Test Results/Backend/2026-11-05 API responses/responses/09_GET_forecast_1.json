@@ -1,0 +1,36 @@
+{
+  "group": "Logged in as admin",
+  "title": "Monthly forecast",
+  "method": "GET",
+  "path": "/forecast/1?forecast_type=monthly",
+  "used_by": "Dashboard, Forecast Chart, Explanation, Model Compare",
+  "request_headers": {
+    "Authorization": "Bearer [hidden]"
+  },
+  "request_body": null,
+  "expected_status": 200,
+  "status": 200,
+  "response": {
+    "store_id": 1,
+    "forecast_type": "monthly",
+    "record_count": 3,
+    "forecasts": [
+      {
+        "period": "2015-05-01",
+        "actual_sales": 105220.0,
+        "prediction": 116586.31
+      },
+      {
+        "period": "2015-06-01",
+        "actual_sales": 110011.0,
+        "prediction": 112340.34
+      },
+      {
+        "period": "2015-07-01",
+        "actual_sales": 121266.0,
+        "prediction": 117417.91
+      }
+    ]
+  },
+  "file": "responses/09_GET_forecast_1.json"
+}

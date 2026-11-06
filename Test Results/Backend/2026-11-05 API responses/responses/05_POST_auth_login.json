@@ -1,0 +1,22 @@
+{
+  "group": "Login",
+  "title": "Login with the supplied account",
+  "method": "POST",
+  "path": "/auth/login",
+  "used_by": "Login",
+  "request_headers": {},
+  "request_body": {
+    "username": "admin",
+    "password": "[hidden]"
+  },
+  "expected_status": 200,
+  "status": 200,
+  "response": {
+    "access_token": "[hidden]",
+    "token_type": "bearer",
+    "username": "admin",
+    "role": "admin",
+    "assigned_store": null
+  },
+  "file": "responses/05_POST_auth_login.json"
+}

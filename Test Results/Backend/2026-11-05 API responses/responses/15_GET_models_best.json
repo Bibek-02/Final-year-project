@@ -1,0 +1,22 @@
+{
+  "group": "Logged in as admin",
+  "title": "Best model",
+  "method": "GET",
+  "path": "/models/best?forecast_type=weekly",
+  "used_by": "Sidebar, Model Compare",
+  "request_headers": {
+    "Authorization": "Bearer [hidden]"
+  },
+  "request_body": null,
+  "expected_status": 200,
+  "status": 200,
+  "response": {
+    "forecast_type": "weekly",
+    "best_model": "XGBoost",
+    "MAE": 1989.39,
+    "RMSE": 2950.374,
+    "MAPE": 4.884,
+    "RMSPE": 6.802
+  },
+  "file": "responses/15_GET_models_best.json"
+}

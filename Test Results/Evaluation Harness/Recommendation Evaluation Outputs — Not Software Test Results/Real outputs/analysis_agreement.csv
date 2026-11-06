@@ -1,0 +1,5 @@
+criterion,n,exact_agreement_pct,weighted_kappa,note
+grounding,6,83.33333333333334,0.0,"second-pass scores were constant on this criterion; weighted_kappa is forced toward 0 by construction (the ""kappa paradox"") and is not a meaningful reliability estimate here — see exact_agreement_pct instead"
+consistency,6,83.33333333333334,0.0,"second-pass scores were constant on this criterion; weighted_kappa is forced toward 0 by construction (the ""kappa paradox"") and is not a meaningful reliability estimate here — see exact_agreement_pct instead"
+actionability,6,16.666666666666664,-0.36363636363636354,
+caution,6,66.66666666666666,0.0,"second-pass scores were constant on this criterion; weighted_kappa is forced toward 0 by construction (the ""kappa paradox"") and is not a meaningful reliability estimate here — see exact_agreement_pct instead"

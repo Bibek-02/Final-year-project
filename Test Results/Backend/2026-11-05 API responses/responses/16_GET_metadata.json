@@ -1,0 +1,66 @@
+{
+  "group": "Logged in as admin",
+  "title": "Metadata",
+  "method": "GET",
+  "path": "/metadata",
+  "used_by": "Model Compare",
+  "request_headers": {
+    "Authorization": "Bearer [hidden]"
+  },
+  "request_body": null,
+  "expected_status": 200,
+  "status": 200,
+  "response": {
+    "project_title": "Explainable Sales Forecasting with AI-Generated Retail Recommendations: A Rossmann Case Study",
+    "dataset": "Rossmann Store Sales",
+    "forecasting": {
+      "weekly": {
+        "selected_model": "XGBoost",
+        "target": "WeeklySales",
+        "feature_count": 45,
+        "validation_mae": 2660.301,
+        "test_metrics": {
+          "MAE": 1989.39,
+          "RMSE": 2950.374,
+          "MAPE": 4.884,
+          "RMSPE": 6.802
+        }
+      },
+      "monthly": {
+        "selected_model": "XGBoost",
+        "target": "MonthlySales",
+        "feature_count": 41,
+        "validation_mae": 9377.573,
+        "test_metrics": {
+          "MAE": 8678.174,
+          "RMSE": 11486.236,
+          "MAPE": 4.875,
+          "RMSPE": 6.417
+        }
+      }
+    },
+    "model_selection": {
+      "primary_metric": "Validation MAE",
+      "test_set_use": "Final evaluation only"
+    },
+    "explainability": [
+      "XGBoost feature importance",
+      "Global SHAP importance",
+      "Local SHAP explanations"
+    ],
+    "architecture": {
+      "artifact_first": true,
+      "runtime_retraining": false,
+      "backend": "FastAPI",
+      "frontend": "React",
+      "ai_recommendations": true
+    },
+    "dss_output": {
+      "contains_actual_sales": false,
+      "contains_predicted_sales": true,
+      "contains_shap_factors": true,
+      "contains_forecast_summary": true
+    }
+  },
+  "file": "responses/16_GET_metadata.json"
+}

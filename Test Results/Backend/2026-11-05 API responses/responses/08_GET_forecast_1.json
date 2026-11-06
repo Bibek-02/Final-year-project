@@ -1,0 +1,86 @@
+{
+  "group": "Logged in as admin",
+  "title": "Weekly forecast",
+  "method": "GET",
+  "path": "/forecast/1?forecast_type=weekly",
+  "used_by": "Dashboard, Forecast Chart, Explanation, Model Compare",
+  "request_headers": {
+    "Authorization": "Bearer [hidden]"
+  },
+  "request_body": null,
+  "expected_status": 200,
+  "status": 200,
+  "response": {
+    "store_id": 1,
+    "forecast_type": "weekly",
+    "record_count": 13,
+    "forecasts": [
+      {
+        "period": "2015-05-04",
+        "actual_sales": 29272.0,
+        "prediction": 29503.4
+      },
+      {
+        "period": "2015-05-11",
+        "actual_sales": 19705.0,
+        "prediction": 21625.41
+      },
+      {
+        "period": "2015-05-18",
+        "actual_sales": 27740.0,
+        "prediction": 28204.94
+      },
+      {
+        "period": "2015-05-25",
+        "actual_sales": 22653.0,
+        "prediction": 20121.47
+      },
+      {
+        "period": "2015-06-01",
+        "actual_sales": 26600.0,
+        "prediction": 27172.69
+      },
+      {
+        "period": "2015-06-08",
+        "actual_sales": 23342.0,
+        "prediction": 21225.83
+      },
+      {
+        "period": "2015-06-15",
+        "actual_sales": 27314.0,
+        "prediction": 27718.11
+      },
+      {
+        "period": "2015-06-22",
+        "actual_sales": 21823.0,
+        "prediction": 22099.86
+      },
+      {
+        "period": "2015-06-29",
+        "actual_sales": 31175.0,
+        "prediction": 29361.75
+      },
+      {
+        "period": "2015-07-06",
+        "actual_sales": 23041.0,
+        "prediction": 22865.48
+      },
+      {
+        "period": "2015-07-13",
+        "actual_sales": 28548.0,
+        "prediction": 29572.91
+      },
+      {
+        "period": "2015-07-20",
+        "actual_sales": 23256.0,
+        "prediction": 22257.1
+      },
+      {
+        "period": "2015-07-27",
+        "actual_sales": 26178.0,
+        "prediction": 27682.52
+      }
+    ]
+  },
+  "file": "responses/08_GET_forecast_1.json"
+}

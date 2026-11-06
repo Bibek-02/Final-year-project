@@ -1,0 +1,17 @@
+{
+  "group": "No login",
+  "title": "Request with a garbage token is rejected",
+  "method": "GET",
+  "path": "/forecast/stores/list",
+  "used_by": "Store selector",
+  "request_headers": {
+    "Authorization": "Bearer not-a-real-token"
+  },
+  "request_body": null,
+  "expected_status": 401,
+  "status": 401,
+  "response": {
+    "detail": "Invalid or expired token."
+  },
+  "file": "responses/04_GET_forecast_stores_list.json"
+}

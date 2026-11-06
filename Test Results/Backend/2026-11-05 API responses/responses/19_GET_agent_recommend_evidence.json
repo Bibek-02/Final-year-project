@@ -1,0 +1,102 @@
+{
+  "group": "Logged in as admin",
+  "title": "Recommendation evidence (no Claude call)",
+  "method": "GET",
+  "path": "/agent/recommend/evidence?forecast_type=weekly&store_id=1",
+  "used_by": "AI Recommendations",
+  "request_headers": {
+    "Authorization": "Bearer [hidden]"
+  },
+  "request_body": null,
+  "expected_status": 200,
+  "status": 200,
+  "response": {
+    "store_id": 1,
+    "forecast_type": "weekly",
+    "period": "2015-07-27",
+    "predicted_sales": 27682.52,
+    "baseline_model_output": 40538.6793,
+    "net_shap_adjustment": -12856.1593,
+    "top_positive_drivers": [
+      {
+        "feature": "PromoDays",
+        "readable_feature": "Promotion activity",
+        "shap_value": 4113.823
+      },
+      {
+        "feature": "TimeIndex",
+        "readable_feature": "Time progression",
+        "shap_value": 382.5132
+      },
+      {
+        "feature": "periods_since_last_promo",
+        "readable_feature": "Time since last promotion",
+        "shap_value": 349.3983
+      }
+    ],
+    "top_negative_drivers": [
+      {
+        "feature": "rolling_mean_12",
+        "readable_feature": "Average sales over the previous 12 weeks",
+        "shap_value": -4545.9204
+      },
+      {
+        "feature": "rolling_mean_4",
+        "readable_feature": "Average sales over the previous 4 weeks",
+        "shap_value": -2074.6042
+      },
+      {
+        "feature": "EMA_8",
+        "readable_feature": "Recent sales trend over the previous 8 weeks",
+        "shap_value": -1972.6764
+      }
+    ],
+    "shap_drivers": [
+      {
+        "feature": "rolling_mean_12",
+        "readable_feature": "Average sales over the previous 12 weeks",
+        "shap_value": -4545.9204
+      },
+      {
+        "feature": "PromoDays",
+        "readable_feature": "Promotion activity",
+        "shap_value": 4113.823
+      },
+      {
+        "feature": "rolling_mean_4",
+        "readable_feature": "Average sales over the previous 4 weeks",
+        "shap_value": -2074.6042
+      },
+      {
+        "feature": "EMA_8",
+        "readable_feature": "Recent sales trend over the previous 8 weeks",
+        "shap_value": -1972.6764
+      },
+      {
+        "feature": "sales_lag_52",
+        "readable_feature": "Same week last year",
+        "shap_value": -1955.784
+      },
+      {
+        "feature": "WeekendDays",
+        "readable_feature": "Weekend days",
+        "shap_value": -1583.7649
+      },
+      {
+        "feature": "rolling_mean_8",
+        "readable_feature": "Average sales over the previous 8 weeks",
+        "shap_value": -1184.611
+      },
+      {
+        "feature": "OpenDays",
+        "readable_feature": "Number of open days",
+        "shap_value": -1131.5277
+      }
+    ],
+    "shap_feature_count": 45,
+    "reconciliation_ok": true,
+    "forecast_model": "XGBoost",
+    "explanation_source": "Precomputed local SHAP"
+  },
+  "file": "responses/19_GET_agent_recommend_evidence.json"
+}

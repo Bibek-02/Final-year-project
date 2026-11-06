@@ -1,0 +1,15 @@
+Source notebook: ../Model traning/rossmann.ipynb
+Method: parsed notebook JSON (no execution), listed every line containing an `assert` statement in a code cell.
+Cell numbering: sequential position among code cells (1-based); exec_count is the notebook's stored execution_count for that cell.
+
+Cell 14 (exec_count=14): assert df_clean.isnull().sum().sum() == 0
+Cell 14 (exec_count=14): assert "Customers" not in df_clean.columns
+Cell 30 (exec_count=30):     assert len(train) + len(val) + len(test) == len(df)
+Cell 30 (exec_count=30):     assert train[date_col].max() < val[date_col].min()
+Cell 30 (exec_count=30):     assert val[date_col].max() < test[date_col].min()
+Cell 32 (exec_count=32): assert len(weekly_features) == 45, f"Expected 45 weekly features, got {len(weekly_features)}"
+Cell 32 (exec_count=32): assert len(monthly_features) == 41, f"Expected 41 monthly features, got {len(monthly_features)}"
+Cell 32 (exec_count=32): assert X_weekly_train.shape[1] == X_weekly_val.shape[1] == X_weekly_test.shape[1] == len(weekly_features)
+Cell 32 (exec_count=32): assert X_monthly_train.shape[1] == X_monthly_val.shape[1] == X_monthly_test.shape[1] == len(monthly_features)
+
+Total: 9 assert statements across 3 code cells (14, 30, 32).

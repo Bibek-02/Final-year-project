@@ -1,0 +1,427 @@
+{
+  "group": "Logged in as admin",
+  "title": "Local SHAP",
+  "method": "GET",
+  "path": "/shap/local?forecast_type=weekly&store_id=1",
+  "used_by": "Dashboard, Explanation",
+  "request_headers": {
+    "Authorization": "Bearer [hidden]"
+  },
+  "request_body": null,
+  "expected_status": 200,
+  "status": 200,
+  "response": {
+    "store_id": 1,
+    "period": "2015-07-27",
+    "forecast_type": "weekly",
+    "record_count": 45,
+    "explanation": [
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Feature": "rolling_mean_12",
+        "Readable Feature": "recent 12-week average sales",
+        "Feature Value": 25372.4167,
+        "SHAP Value": -4545.9204,
+        "Effect": "Decreases prediction"
+      },
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Feature": "PromoDays",
+        "Readable Feature": "promotion activity",
+        "Feature Value": 5.0,
+        "SHAP Value": 4113.823,
+        "Effect": "Increases prediction"
+      },
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Feature": "rolling_mean_4",
+        "Readable Feature": "recent 4-week average sales",
+        "Feature Value": 26505.0,
+        "SHAP Value": -2074.6042,
+        "Effect": "Decreases prediction"
+      },
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Feature": "EMA_8",
+        "Readable Feature": "recent 8-week weighted sales trend",
+        "Feature Value": 25477.4748,
+        "SHAP Value": -1972.6764,
+        "Effect": "Decreases prediction"
+      },
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Feature": "sales_lag_52",
+        "Readable Feature": "sales fifty-two weeks ago",
+        "Feature Value": 30986.0,
+        "SHAP Value": -1955.784,
+        "Effect": "Decreases prediction"
+      },
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Feature": "WeekendDays",
+        "Readable Feature": "weekend days",
+        "Feature Value": 0.0,
+        "SHAP Value": -1583.7649,
+        "Effect": "Decreases prediction"
+      },
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Feature": "rolling_mean_8",
+        "Readable Feature": "recent 8-week average sales",
+        "Feature Value": 25637.375,
+        "SHAP Value": -1184.611,
+        "Effect": "Decreases prediction"
+      },
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Feature": "OpenDays",
+        "Readable Feature": "number of open days",
+        "Feature Value": 5.0,
+        "SHAP Value": -1131.5277,
+        "Effect": "Decreases prediction"
+      },
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Feature": "EMA_4",
+        "Readable Feature": "recent 4-week weighted sales trend",
+        "Feature Value": 25289.9407,
+        "SHAP Value": -996.9216,
+        "Effect": "Decreases prediction"
+      },
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Feature": "SchoolHolidayDays",
+        "Readable Feature": "school holiday period",
+        "Feature Value": 5.0,
+        "SHAP Value": -991.6021,
+        "Effect": "Decreases prediction"
+      },
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Feature": "sales_lag_1",
+        "Readable Feature": "previous period sales",
+        "Feature Value": 23256.0,
+        "SHAP Value": -427.004,
+        "Effect": "Decreases prediction"
+      },
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Feature": "sales_lag_2",
+        "Readable Feature": "sales two periods ago",
+        "Feature Value": 28548.0,
+        "SHAP Value": -404.0074,
+        "Effect": "Decreases prediction"
+      },
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Feature": "TimeIndex",
+        "Readable Feature": "time progression",
+        "Feature Value": 135.0,
+        "SHAP Value": 382.5132,
+        "Effect": "Increases prediction"
+      },
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Feature": "periods_since_last_promo",
+        "Readable Feature": "time since previous promotion",
+        "Feature Value": 1.0,
+        "SHAP Value": 349.3983,
+        "Effect": "Increases prediction"
+      },
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Feature": "MonthEndDays",
+        "Readable Feature": "month-end timing",
+        "Feature Value": 1.0,
+        "SHAP Value": 324.8621,
+        "Effect": "Increases prediction"
+      },
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Feature": "WeekOfYear",
+        "Readable Feature": "week of year",
+        "Feature Value": 31.0,
+        "SHAP Value": -283.2759,
+        "Effect": "Decreases prediction"
+      },
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Feature": "sales_lag_4",
+        "Readable Feature": "sales four weeks ago",
+        "Feature Value": 31175.0,
+        "SHAP Value": -195.1047,
+        "Effect": "Decreases prediction"
+      },
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Feature": "rolling_std_8",
+        "Readable Feature": "recent 8-week sales variability",
+        "Feature Value": 3275.5601,
+        "SHAP Value": -193.3613,
+        "Effect": "Decreases prediction"
+      },
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Feature": "sales_lag_8",
+        "Readable Feature": "sales eight weeks ago",
+        "Feature Value": 26600.0,
+        "SHAP Value": 191.4444,
+        "Effect": "Increases prediction"
+      },
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Feature": "rolling_std_4",
+        "Readable Feature": "recent 4-week sales variability",
+        "Feature Value": 4022.3561,
+        "SHAP Value": -191.4151,
+        "Effect": "Decreases prediction"
+      },
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Feature": "StoreType_a",
+        "Readable Feature": "StoreType_a",
+        "Feature Value": 0.0,
+        "SHAP Value": 129.9158,
+        "Effect": "Increases prediction"
+      },
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Feature": "MonthStartDays",
+        "Readable Feature": "month-start timing",
+        "Feature Value": 0.0,
+        "SHAP Value": -91.3152,
+        "Effect": "Decreases prediction"
+      },
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Feature": "CompetitionOpenSinceYear",
+        "Readable Feature": "CompetitionOpenSinceYear",
+        "Feature Value": 2008.0,
+        "SHAP Value": 82.9404,
+        "Effect": "Increases prediction"
+      },
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Feature": "Store",
+        "Readable Feature": "Store",
+        "Feature Value": 1.0,
+        "SHAP Value": 70.3017,
+        "Effect": "Increases prediction"
+      },
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Feature": "Assortment_c",
+        "Readable Feature": "Assortment_c",
+        "Feature Value": 0.0,
+        "SHAP Value": -49.0403,
+        "Effect": "Decreases prediction"
+      },
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Feature": "Month",
+        "Readable Feature": "month of year",
+        "Feature Value": 7.0,
+        "SHAP Value": -39.4366,
+        "Effect": "Decreases prediction"
+      },
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Feature": "Assortment_a",
+        "Readable Feature": "Assortment_a",
+        "Feature Value": 1.0,
+        "SHAP Value": -34.1711,
+        "Effect": "Decreases prediction"
+      },
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Feature": "CompetitionDistance",
+        "Readable Feature": "distance to nearest competitor",
+        "Feature Value": 1270.0,
+        "SHAP Value": -31.6413,
+        "Effect": "Decreases prediction"
+      },
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Feature": "PromoInterval_Feb,May,Aug,Nov",
+        "Readable Feature": "PromoInterval_Feb,May,Aug,Nov",
+        "Feature Value": 0.0,
+        "SHAP Value": -26.3827,
+        "Effect": "Decreases prediction"
+      },
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Feature": "Promo2",
+        "Readable Feature": "long-term promotion participation",
+        "Feature Value": 0.0,
+        "SHAP Value": -25.0472,
+        "Effect": "Decreases prediction"
+      },
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Feature": "Promo2SinceYear",
+        "Readable Feature": "Promo2SinceYear",
+        "Feature Value": 0.0,
+        "SHAP Value": -17.02,
+        "Effect": "Decreases prediction"
+      },
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Feature": "CompetitionOpenSinceMonth",
+        "Readable Feature": "CompetitionOpenSinceMonth",
+        "Feature Value": 9.0,
+        "SHAP Value": -15.5552,
+        "Effect": "Decreases prediction"
+      },
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Feature": "StoreType_c",
+        "Readable Feature": "StoreType_c",
+        "Feature Value": 1.0,
+        "SHAP Value": 15.4083,
+        "Effect": "Increases prediction"
+      },
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Feature": "Year",
+        "Readable Feature": "calendar year",
+        "Feature Value": 2015.0,
+        "SHAP Value": -14.8613,
+        "Effect": "Decreases prediction"
+      },
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Feature": "Quarter",
+        "Readable Feature": "quarter of year",
+        "Feature Value": 3.0,
+        "SHAP Value": -13.5473,
+        "Effect": "Decreases prediction"
+      },
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Feature": "StoreType_d",
+        "Readable Feature": "StoreType_d",
+        "Feature Value": 0.0,
+        "SHAP Value": -11.0171,
+        "Effect": "Decreases prediction"
+      },
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Feature": "PromoInterval_Mar,Jun,Sept,Dec",
+        "Readable Feature": "PromoInterval_Mar,Jun,Sept,Dec",
+        "Feature Value": 0.0,
+        "SHAP Value": -9.634,
+        "Effect": "Decreases prediction"
+      },
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Feature": "Promo2SinceWeek",
+        "Readable Feature": "Promo2SinceWeek",
+        "Feature Value": 0.0,
+        "SHAP Value": -9.6094,
+        "Effect": "Decreases prediction"
+      },
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Feature": "StoreType_b",
+        "Readable Feature": "StoreType_b",
+        "Feature Value": 0.0,
+        "SHAP Value": 8.905,
+        "Effect": "Increases prediction"
+      },
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Feature": "StateHolidayDays",
+        "Readable Feature": "state holiday period",
+        "Feature Value": 0.0,
+        "SHAP Value": -8.8762,
+        "Effect": "Decreases prediction"
+      },
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Feature": "rolling_std_12",
+        "Readable Feature": "recent 12-week sales variability",
+        "Feature Value": 3516.1151,
+        "SHAP Value": 8.1205,
+        "Effect": "Increases prediction"
+      },
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Feature": "PromoInterval_Jan,Apr,Jul,Oct",
+        "Readable Feature": "PromoInterval_Jan,Apr,Jul,Oct",
+        "Feature Value": 0.0,
+        "SHAP Value": -5.6783,
+        "Effect": "Decreases prediction"
+      },
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Feature": "CompetitionOpenKnown",
+        "Readable Feature": "competition opening date availability",
+        "Feature Value": 1.0,
+        "SHAP Value": 1.1627,
+        "Effect": "Increases prediction"
+      },
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Feature": "PromoInterval_none",
+        "Readable Feature": "PromoInterval_none",
+        "Feature Value": 1.0,
+        "SHAP Value": -0.9706,
+        "Effect": "Decreases prediction"
+      },
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Feature": "Assortment_b",
+        "Readable Feature": "Assortment_b",
+        "Feature Value": 0.0,
+        "SHAP Value": 0.4298,
+        "Effect": "Increases prediction"
+      }
+    ]
+  },
+  "file": "responses/12_GET_shap_local.json"
+}

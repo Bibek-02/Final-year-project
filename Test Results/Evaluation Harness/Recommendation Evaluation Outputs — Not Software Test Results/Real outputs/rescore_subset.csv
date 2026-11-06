@@ -1,0 +1,7 @@
+rescore_id,grounding,consistency,actionability,caution,notes
+R1,2,2,1,2,"Well grounded in forecast value, SHAP drivers and recent averages. Actionability is partial because the staffing and stock suggestions remain review-level and do not define measurable operational steps."
+R2,2,2,1,2,"Evidence use is strong across open days, promotion days and monthly trends. Actionability is partial because the recommendations are sensible but broad for actual monthly execution."
+R3,2,2,2,2,"Strong technical consistency: lower forecast is explained by no promotion days, fewer open days and lower recent/lag evidence. Recommendations are clear review actions and limitations are well stated."
+R4,2,2,1,2,"The response is consistent with the positive trend and promotion evidence. Actionability is partial because the stock and promotion reviews are useful but still lack product, quantity or schedule detail."
+R5,2,2,2,2,"Good data-grounded interpretation of a shorter non-promotional week. Actions are practical because they focus on checking calendar, promotion recording, staffing cover and replenishment assumptions."
+R6,2,2,1,2,"Strong grounding in promotion drivers and recent averages. Actionability is partial because the recommendations stay at high-level review rather than giving specific operational checks."

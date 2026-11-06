@@ -1,0 +1,19 @@
+Run date: 2026-11-05
+Type: manual API capture, not a test suite
+Git commit (HEAD): 111b46dbc54d95ec66c7cc630861903c3775d808
+Git status of code/backend:
+(no uncommitted changes under code/backend)
+Python: 3.13.4
+fastapi: 0.136.3
+uvicorn: 0.48.0
+pydantic: 2.13.4
+pymongo: 4.17.0
+pandas: 3.0.3
+numpy: 2.4.6
+scikit-learn: 1.8.0
+xgboost: 3.2.0
+shap: 0.52.0
+anthropic: 0.105.2
+Account role used: admin
+Configuration: the backend's existing settings were used; values not recorded.
+Calls to Claude: none. Database writes: none requested.

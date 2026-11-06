@@ -1,0 +1,568 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Backend API Responses</title><style>
+:root{--bg:#f6f7f9;--panel:#fff;--text:#1d2329;--muted:#5d6873;--line:#dfe3e8;--pass:#14733c;--pass-bg:#e3f5ea;
+--fail:#b3261e;--fail-bg:#fbe9e7;--info:#8a5a00;--info-bg:#fdf1d8;--code:#f3f4f6}
+@media (prefers-color-scheme:dark){:root{--bg:#16191d;--panel:#1f2329;--text:#e7eaee;--muted:#a3adb8;--line:#343a42;
+--pass:#6fd79a;--pass-bg:#173526;--fail:#ff9d94;--fail-bg:#42201d;--info:#f1c56b;--info-bg:#3a2f15;--code:#171a1e}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:1000px;margin:0 auto;padding:28px 16px 60px}h1{font-size:26px;margin:0 0 6px}h2{font-size:18px;margin:28px 0 10px}
+.muted{color:var(--muted)}.totals{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 18px;min-width:110px}
+.tile b{display:block;font-size:24px}.note{background:var(--info-bg);border-radius:8px;padding:10px 14px;margin:14px 0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;margin:10px 0;overflow:hidden}
+.card>summary,.head{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:10px 14px;cursor:pointer}
+.method{font-weight:700;font-family:Consolas,monospace}.url{font-family:Consolas,monospace;overflow-wrap:anywhere;flex:1;min-width:200px}
+.badge{border-radius:5px;padding:1px 9px;font-weight:700;font-size:13px;white-space:nowrap}
+.ok{background:var(--pass-bg);color:var(--pass)}.bad{background:var(--fail-bg);color:var(--fail)}.neutral{background:var(--info-bg);color:var(--info)}
+.body{padding:0 14px 14px}pre{background:var(--code);border-radius:6px;padding:12px;overflow:auto;max-height:420px;font:13px/1.45 Consolas,monospace;margin:6px 0}
+.row{display:flex;gap:10px;padding:6px 14px;border-top:1px solid var(--line);align-items:baseline}.row span:last-child{overflow-wrap:anywhere}
+.group{padding:8px 14px 2px;font-weight:600;color:var(--muted);border-top:1px solid var(--line)}
+table{border-collapse:collapse;width:100%}th,td{text-align:left;padding:6px 10px;border-top:1px solid var(--line)}
+</style></head><body><main>
+<h1>Backend API responses</h1><p class="muted">Real responses captured on 2026-11-05 from a local backend, with users read from the configured MongoDB database. Select a request to open it.</p>
+<div class="totals"><div class="tile"><b>19</b>Requests</div><div class="tile"><b>19</b>Status as expected</div><div class="tile"><b>0</b>Status not as expected</div></div>
+<p class="note">This is a manual API capture, not a test suite. "Status as expected" compares the status code only, not whether the data is correct. These requests are not counted in the 74 backend pytest results. Access tokens and passwords are hidden.</p>
+<h2>No login</h2><details class="card"><summary><span class="method">GET</span><span class="url">/health</span><span class="badge ok">200</span></summary><div class="body"><p><b>Backend is running</b><br><span class="muted">Expected status 200. Frontend use: Not called by a frontend page. Full response: <a href="responses/01_GET_health.json">responses/01_GET_health.json</a></span></p><b>Request</b><pre>{
+  &quot;headers&quot;: {}
+}</pre><b>Response</b><pre>{
+  &quot;status&quot;: &quot;ok&quot;,
+  &quot;message&quot;: &quot;Rossmann DSS backend is running&quot;
+}</pre></div></details><details class="card"><summary><span class="method">POST</span><span class="url">/auth/login</span><span class="badge ok">401</span></summary><div class="body"><p><b>Login with a made-up user is rejected</b><br><span class="muted">Expected status 401. Frontend use: Login. Full response: <a href="responses/02_POST_auth_login.json">responses/02_POST_auth_login.json</a></span></p><b>Request</b><pre>{
+  &quot;headers&quot;: {},
+  &quot;body&quot;: {
+    &quot;username&quot;: &quot;no_such_user_report&quot;,
+    &quot;password&quot;: &quot;[hidden]&quot;
+  }
+}</pre><b>Response</b><pre>{
+  &quot;detail&quot;: &quot;Invalid username or password.&quot;
+}</pre></div></details><details class="card"><summary><span class="method">GET</span><span class="url">/forecast/stores/list</span><span class="badge ok">401</span></summary><div class="body"><p><b>Request with no token is rejected</b><br><span class="muted">Expected status 401. Frontend use: Store selector. Full response: <a href="responses/03_GET_forecast_stores_list.json">responses/03_GET_forecast_stores_list.json</a></span></p><b>Request</b><pre>{
+  &quot;headers&quot;: {}
+}</pre><b>Response</b><pre>{
+  &quot;detail&quot;: &quot;Not authenticated&quot;
+}</pre></div></details><details class="card"><summary><span class="method">GET</span><span class="url">/forecast/stores/list</span><span class="badge ok">401</span></summary><div class="body"><p><b>Request with a garbage token is rejected</b><br><span class="muted">Expected status 401. Frontend use: Store selector. Full response: <a href="responses/04_GET_forecast_stores_list.json">responses/04_GET_forecast_stores_list.json</a></span></p><b>Request</b><pre>{
+  &quot;headers&quot;: {
+    &quot;Authorization&quot;: &quot;Bearer not-a-real-token&quot;
+  }
+}</pre><b>Response</b><pre>{
+  &quot;detail&quot;: &quot;Invalid or expired token.&quot;
+}</pre></div></details><h2>Login</h2><details class="card"><summary><span class="method">POST</span><span class="url">/auth/login</span><span class="badge ok">200</span></summary><div class="body"><p><b>Login with the supplied account</b><br><span class="muted">Expected status 200. Frontend use: Login. Full response: <a href="responses/05_POST_auth_login.json">responses/05_POST_auth_login.json</a></span></p><b>Request</b><pre>{
+  &quot;headers&quot;: {},
+  &quot;body&quot;: {
+    &quot;username&quot;: &quot;admin&quot;,
+    &quot;password&quot;: &quot;[hidden]&quot;
+  }
+}</pre><b>Response</b><pre>{
+  &quot;access_token&quot;: &quot;[hidden]&quot;,
+  &quot;token_type&quot;: &quot;bearer&quot;,
+  &quot;username&quot;: &quot;admin&quot;,
+  &quot;role&quot;: &quot;admin&quot;,
+  &quot;assigned_store&quot;: null
+}</pre></div></details><h2>Logged in as admin</h2><details class="card"><summary><span class="method">GET</span><span class="url">/auth/me</span><span class="badge ok">200</span></summary><div class="body"><p><b>Current user</b><br><span class="muted">Expected status 200. Frontend use: Not called by a frontend page. Full response: <a href="responses/06_GET_auth_me.json">responses/06_GET_auth_me.json</a></span></p><b>Request</b><pre>{
+  &quot;headers&quot;: {
+    &quot;Authorization&quot;: &quot;Bearer [hidden]&quot;
+  }
+}</pre><b>Response</b><pre>{
+  &quot;username&quot;: &quot;admin&quot;,
+  &quot;role&quot;: &quot;admin&quot;,
+  &quot;assigned_store&quot;: null
+}</pre></div></details><details class="card"><summary><span class="method">GET</span><span class="url">/forecast/stores/list?forecast_type=weekly</span><span class="badge ok">200</span></summary><div class="body"><p><b>Available stores</b><br><span class="muted">Expected status 200. Frontend use: Store selector. Full response: <a href="responses/07_GET_forecast_stores_list.json">responses/07_GET_forecast_stores_list.json</a></span></p><b>Request</b><pre>{
+  &quot;headers&quot;: {
+    &quot;Authorization&quot;: &quot;Bearer [hidden]&quot;
+  }
+}</pre><b>Response (long lists shortened)</b><pre>{
+  &quot;forecast_type&quot;: &quot;weekly&quot;,
+  &quot;store_count&quot;: 1115,
+  &quot;store_ids&quot;: [
+    1,
+    2,
+    3,
+    4,
+    5,
+    &quot;... shortened on this page: 1110 more items in the saved JSON file&quot;
+  ]
+}</pre></div></details><details class="card"><summary><span class="method">GET</span><span class="url">/forecast/1?forecast_type=weekly</span><span class="badge ok">200</span></summary><div class="body"><p><b>Weekly forecast</b><br><span class="muted">Expected status 200. Frontend use: Dashboard, Forecast Chart, Explanation, Model Compare. Full response: <a href="responses/08_GET_forecast_1.json">responses/08_GET_forecast_1.json</a></span></p><b>Request</b><pre>{
+  &quot;headers&quot;: {
+    &quot;Authorization&quot;: &quot;Bearer [hidden]&quot;
+  }
+}</pre><b>Response (long lists shortened)</b><pre>{
+  &quot;store_id&quot;: 1,
+  &quot;forecast_type&quot;: &quot;weekly&quot;,
+  &quot;record_count&quot;: 13,
+  &quot;forecasts&quot;: [
+    {
+      &quot;period&quot;: &quot;2015-05-04&quot;,
+      &quot;actual_sales&quot;: 29272.0,
+      &quot;prediction&quot;: 29503.4
+    },
+    {
+      &quot;period&quot;: &quot;2015-05-11&quot;,
+      &quot;actual_sales&quot;: 19705.0,
+      &quot;prediction&quot;: 21625.41
+    },
+    {
+      &quot;period&quot;: &quot;2015-05-18&quot;,
+      &quot;actual_sales&quot;: 27740.0,
+      &quot;prediction&quot;: 28204.94
+    },
+    {
+      &quot;period&quot;: &quot;2015-05-25&quot;,
+      &quot;actual_sales&quot;: 22653.0,
+      &quot;prediction&quot;: 20121.47
+    },
+    {
+      &quot;period&quot;: &quot;2015-06-01&quot;,
+      &quot;actual_sales&quot;: 26600.0,
+      &quot;prediction&quot;: 27172.69
+    },
+    &quot;... shortened on this page: 8 more items in the saved JSON file&quot;
+  ]
+}</pre></div></details><details class="card"><summary><span class="method">GET</span><span class="url">/forecast/1?forecast_type=monthly</span><span class="badge ok">200</span></summary><div class="body"><p><b>Monthly forecast</b><br><span class="muted">Expected status 200. Frontend use: Dashboard, Forecast Chart, Explanation, Model Compare. Full response: <a href="responses/09_GET_forecast_1.json">responses/09_GET_forecast_1.json</a></span></p><b>Request</b><pre>{
+  &quot;headers&quot;: {
+    &quot;Authorization&quot;: &quot;Bearer [hidden]&quot;
+  }
+}</pre><b>Response</b><pre>{
+  &quot;store_id&quot;: 1,
+  &quot;forecast_type&quot;: &quot;monthly&quot;,
+  &quot;record_count&quot;: 3,
+  &quot;forecasts&quot;: [
+    {
+      &quot;period&quot;: &quot;2015-05-01&quot;,
+      &quot;actual_sales&quot;: 105220.0,
+      &quot;prediction&quot;: 116586.31
+    },
+    {
+      &quot;period&quot;: &quot;2015-06-01&quot;,
+      &quot;actual_sales&quot;: 110011.0,
+      &quot;prediction&quot;: 112340.34
+    },
+    {
+      &quot;period&quot;: &quot;2015-07-01&quot;,
+      &quot;actual_sales&quot;: 121266.0,
+      &quot;prediction&quot;: 117417.91
+    }
+  ]
+}</pre></div></details><details class="card"><summary><span class="method">GET</span><span class="url">/forecast/stores/comparison?forecast_type=weekly</span><span class="badge ok">200</span></summary><div class="body"><p><b>Store comparison</b><br><span class="muted">Expected status 200. Frontend use: Store Comparison. Full response: <a href="responses/10_GET_forecast_stores_comparison.json">responses/10_GET_forecast_stores_comparison.json</a></span></p><b>Request</b><pre>{
+  &quot;headers&quot;: {
+    &quot;Authorization&quot;: &quot;Bearer [hidden]&quot;
+  }
+}</pre><b>Response (long lists shortened)</b><pre>{
+  &quot;forecast_type&quot;: &quot;weekly&quot;,
+  &quot;start_period&quot;: &quot;2015-05-04&quot;,
+  &quot;end_period&quot;: &quot;2015-07-27&quot;,
+  &quot;available_periods&quot;: [
+    &quot;2015-05-04&quot;,
+    &quot;2015-05-11&quot;,
+    &quot;2015-05-18&quot;,
+    &quot;2015-05-25&quot;,
+    &quot;2015-06-01&quot;,
+    &quot;... shortened on this page: 8 more items in the saved JSON file&quot;
+  ],
+  &quot;selected_periods&quot;: [
+    &quot;2015-05-04&quot;,
+    &quot;2015-05-11&quot;,
+    &quot;2015-05-18&quot;,
+    &quot;2015-05-25&quot;,
+    &quot;2015-06-01&quot;,
+    &quot;... shortened on this page: 8 more items in the saved JSON file&quot;
+  ],
+  &quot;period_count&quot;: 13,
+  &quot;store_count&quot;: 1115,
+  &quot;stores&quot;: [
+    {
+      &quot;store_id&quot;: 1,
+      &quot;total_predicted&quot;: 329411.48,
+      &quot;total_actual&quot;: 330647.0,
+      &quot;difference&quot;: -1235.52,
+      &quot;absolute_difference&quot;: 1235.52,
+      &quot;difference_pct&quot;: -0.3737,
+      &quot;mae&quot;: 1079.63,
+      &quot;periods_covered&quot;: 13,
+      &quot;periods_expected&quot;: 13,
+      &quot;is_complete&quot;: true
+    },
+    {
+      &quot;store_id&quot;: 2,
+      &quot;total_predicted&quot;: 373519.1,
+      &quot;total_actual&quot;: 378510.0,
+      &quot;difference&quot;: -4990.9,
+      &quot;absolute_difference&quot;: 4990.9,
+      &quot;difference_pct&quot;: -1.3186,
+      &quot;mae&quot;: 1297.25,
+      &quot;periods_covered&quot;: 13,
+      &quot;periods_expected&quot;: 13,
+      &quot;is_complete&quot;: true
+    },
+    {
+      &quot;store_id&quot;: 3,
+      &quot;total_predicted&quot;: 523578.81,
+      &quot;total_actual&quot;: 531133.0,
+      &quot;difference&quot;: -7554.19,
+      &quot;absolute_difference&quot;: 7554.19,
+      &quot;difference_pct&quot;: -1.4223,
+      &quot;mae&quot;: 1690.76,
+      &quot;periods_covered&quot;: 13,
+      &quot;periods_expected&quot;: 13,
+      &quot;is_complete&quot;: true
+    },
+    {
+      &quot;store_id&quot;: 4,
+      &quot;total_predicted&quot;: 759487.25,
+      &quot;total_actual&quot;: 745776.0,
+      &quot;difference&quot;: 13711.25,
+      &quot;absolute_difference&quot;: 13711.25,
+      &quot;difference_pct&quot;: 1.8385,
+      &quot;mae&quot;: 2422.34,
+      &quot;periods_covered&quot;: 13,
+      &quot;periods_expected&quot;: 13,
+      &quot;is_complete&quot;: true
+    },
+    {
+      &quot;store_id&quot;: 5,
+      &quot;total_predicted&quot;: 353163.14,
+      &quot;total_actual&quot;: 353245.0,
+      &quot;difference&quot;: -81.86,
+      &quot;absolute_difference&quot;: 81.86,
+      &quot;difference_pct&quot;: -0.0232,
+      &quot;mae&quot;: 952.02,
+      &quot;periods_covered&quot;: 13,
+      &quot;periods_expected&quot;: 13,
+      &quot;is_complete&quot;: true
+    },
+    &quot;... shortened on this page: 1110 more items in the saved JSON file&quot;
+  ]
+}</pre></div></details><details class="card"><summary><span class="method">GET</span><span class="url">/shap/global?forecast_type=weekly&amp;top_n=15</span><span class="badge ok">200</span></summary><div class="body"><p><b>Global SHAP</b><br><span class="muted">Expected status 200. Frontend use: Explanation. Full response: <a href="responses/11_GET_shap_global.json">responses/11_GET_shap_global.json</a></span></p><b>Request</b><pre>{
+  &quot;headers&quot;: {
+    &quot;Authorization&quot;: &quot;Bearer [hidden]&quot;
+  }
+}</pre><b>Response (long lists shortened)</b><pre>{
+  &quot;forecast_type&quot;: &quot;weekly&quot;,
+  &quot;top_n&quot;: 15,
+  &quot;features&quot;: [
+    {
+      &quot;Feature&quot;: &quot;PromoDays&quot;,
+      &quot;Readable Feature&quot;: &quot;promotion activity&quot;,
+      &quot;Mean_SHAP&quot;: 5448.7437
+    },
+    {
+      &quot;Feature&quot;: &quot;rolling_mean_12&quot;,
+      &quot;Readable Feature&quot;: &quot;recent 12-week average sales&quot;,
+      &quot;Mean_SHAP&quot;: 3721.4243
+    },
+    {
+      &quot;Feature&quot;: &quot;sales_lag_52&quot;,
+      &quot;Readable Feature&quot;: &quot;sales fifty-two weeks ago&quot;,
+      &quot;Mean_SHAP&quot;: 2934.0354
+    },
+    {
+      &quot;Feature&quot;: &quot;EMA_8&quot;,
+      &quot;Readable Feature&quot;: &quot;recent 8-week weighted sales trend&quot;,
+      &quot;Mean_SHAP&quot;: 1419.6742
+    },
+    {
+      &quot;Feature&quot;: &quot;rolling_mean_4&quot;,
+      &quot;Readable Feature&quot;: &quot;recent 4-week average sales&quot;,
+      &quot;Mean_SHAP&quot;: 1001.6917
+    },
+    &quot;... shortened on this page: 10 more items in the saved JSON file&quot;
+  ]
+}</pre></div></details><details class="card"><summary><span class="method">GET</span><span class="url">/shap/local?forecast_type=weekly&amp;store_id=1</span><span class="badge ok">200</span></summary><div class="body"><p><b>Local SHAP</b><br><span class="muted">Expected status 200. Frontend use: Dashboard, Explanation. Full response: <a href="responses/12_GET_shap_local.json">responses/12_GET_shap_local.json</a></span></p><b>Request</b><pre>{
+  &quot;headers&quot;: {
+    &quot;Authorization&quot;: &quot;Bearer [hidden]&quot;
+  }
+}</pre><b>Response (long lists shortened)</b><pre>{
+  &quot;store_id&quot;: 1,
+  &quot;period&quot;: &quot;2015-07-27&quot;,
+  &quot;forecast_type&quot;: &quot;weekly&quot;,
+  &quot;record_count&quot;: 45,
+  &quot;explanation&quot;: [
+    {
+      &quot;Store&quot;: 1,
+      &quot;Period&quot;: &quot;2015-07-27&quot;,
+      &quot;Feature&quot;: &quot;rolling_mean_12&quot;,
+      &quot;Readable Feature&quot;: &quot;recent 12-week average sales&quot;,
+      &quot;Feature Value&quot;: 25372.4167,
+      &quot;SHAP Value&quot;: -4545.9204,
+      &quot;Effect&quot;: &quot;Decreases prediction&quot;
+    },
+    {
+      &quot;Store&quot;: 1,
+      &quot;Period&quot;: &quot;2015-07-27&quot;,
+      &quot;Feature&quot;: &quot;PromoDays&quot;,
+      &quot;Readable Feature&quot;: &quot;promotion activity&quot;,
+      &quot;Feature Value&quot;: 5.0,
+      &quot;SHAP Value&quot;: 4113.823,
+      &quot;Effect&quot;: &quot;Increases prediction&quot;
+    },
+    {
+      &quot;Store&quot;: 1,
+      &quot;Period&quot;: &quot;2015-07-27&quot;,
+      &quot;Feature&quot;: &quot;rolling_mean_4&quot;,
+      &quot;Readable Feature&quot;: &quot;recent 4-week average sales&quot;,
+      &quot;Feature Value&quot;: 26505.0,
+      &quot;SHAP Value&quot;: -2074.6042,
+      &quot;Effect&quot;: &quot;Decreases prediction&quot;
+    },
+    {
+      &quot;Store&quot;: 1,
+      &quot;Period&quot;: &quot;2015-07-27&quot;,
+      &quot;Feature&quot;: &quot;EMA_8&quot;,
+      &quot;Readable Feature&quot;: &quot;recent 8-week weighted sales trend&quot;,
+      &quot;Feature Value&quot;: 25477.4748,
+      &quot;SHAP Value&quot;: -1972.6764,
+      &quot;Effect&quot;: &quot;Decreases prediction&quot;
+    },
+    {
+      &quot;Store&quot;: 1,
+      &quot;Period&quot;: &quot;2015-07-27&quot;,
+      &quot;Feature&quot;: &quot;sales_lag_52&quot;,
+      &quot;Readable Feature&quot;: &quot;sales fifty-two weeks ago&quot;,
+      &quot;Feature Value&quot;: 30986.0,
+      &quot;SHAP Value&quot;: -1955.784,
+      &quot;Effect&quot;: &quot;Decreases prediction&quot;
+    },
+    &quot;... shortened on this page: 40 more items in the saved JSON file&quot;
+  ]
+}</pre></div></details><details class="card"><summary><span class="method">GET</span><span class="url">/shap/importance?forecast_type=weekly&amp;top_n=15</span><span class="badge ok">200</span></summary><div class="body"><p><b>Feature importance</b><br><span class="muted">Expected status 200. Frontend use: Not called by a frontend page. Full response: <a href="responses/13_GET_shap_importance.json">responses/13_GET_shap_importance.json</a></span></p><b>Request</b><pre>{
+  &quot;headers&quot;: {
+    &quot;Authorization&quot;: &quot;Bearer [hidden]&quot;
+  }
+}</pre><b>Response (long lists shortened)</b><pre>{
+  &quot;forecast_type&quot;: &quot;weekly&quot;,
+  &quot;top_n&quot;: 15,
+  &quot;importance&quot;: [
+    {
+      &quot;Feature&quot;: &quot;rolling_mean_12&quot;,
+      &quot;Importance&quot;: 0.213
+    },
+    {
+      &quot;Feature&quot;: &quot;sales_lag_52&quot;,
+      &quot;Importance&quot;: 0.1573
+    },
+    {
+      &quot;Feature&quot;: &quot;PromoDays&quot;,
+      &quot;Importance&quot;: 0.1429
+    },
+    {
+      &quot;Feature&quot;: &quot;rolling_mean_8&quot;,
+      &quot;Importance&quot;: 0.1208
+    },
+    {
+      &quot;Feature&quot;: &quot;EMA_8&quot;,
+      &quot;Importance&quot;: 0.1004
+    },
+    &quot;... shortened on this page: 10 more items in the saved JSON file&quot;
+  ]
+}</pre></div></details><details class="card"><summary><span class="method">GET</span><span class="url">/models/compare?forecast_type=weekly</span><span class="badge ok">200</span></summary><div class="body"><p><b>Model comparison</b><br><span class="muted">Expected status 200. Frontend use: Model Compare. Full response: <a href="responses/14_GET_models_compare.json">responses/14_GET_models_compare.json</a></span></p><b>Request</b><pre>{
+  &quot;headers&quot;: {
+    &quot;Authorization&quot;: &quot;Bearer [hidden]&quot;
+  }
+}</pre><b>Response</b><pre>{
+  &quot;filter&quot;: &quot;weekly&quot;,
+  &quot;record_count&quot;: 3,
+  &quot;comparison&quot;: [
+    {
+      &quot;Model&quot;: &quot;XGBoost&quot;,
+      &quot;Forecast Type&quot;: &quot;Weekly&quot;,
+      &quot;MAE&quot;: 1989.39,
+      &quot;RMSE&quot;: 2950.374,
+      &quot;MAPE&quot;: 4.884,
+      &quot;RMSPE&quot;: 6.802
+    },
+    {
+      &quot;Model&quot;: &quot;Random Forest&quot;,
+      &quot;Forecast Type&quot;: &quot;Weekly&quot;,
+      &quot;MAE&quot;: 2739.026,
+      &quot;RMSE&quot;: 4116.175,
+      &quot;MAPE&quot;: 6.69,
+      &quot;RMSPE&quot;: 9.818
+    },
+    {
+      &quot;Model&quot;: &quot;Moving Average 12 Weeks&quot;,
+      &quot;Forecast Type&quot;: &quot;Weekly&quot;,
+      &quot;MAE&quot;: 6485.035,
+      &quot;RMSE&quot;: 7511.622,
+      &quot;MAPE&quot;: 16.499,
+      &quot;RMSPE&quot;: 19.266
+    }
+  ]
+}</pre></div></details><details class="card"><summary><span class="method">GET</span><span class="url">/models/best?forecast_type=weekly</span><span class="badge ok">200</span></summary><div class="body"><p><b>Best model</b><br><span class="muted">Expected status 200. Frontend use: Sidebar, Model Compare. Full response: <a href="responses/15_GET_models_best.json">responses/15_GET_models_best.json</a></span></p><b>Request</b><pre>{
+  &quot;headers&quot;: {
+    &quot;Authorization&quot;: &quot;Bearer [hidden]&quot;
+  }
+}</pre><b>Response</b><pre>{
+  &quot;forecast_type&quot;: &quot;weekly&quot;,
+  &quot;best_model&quot;: &quot;XGBoost&quot;,
+  &quot;MAE&quot;: 1989.39,
+  &quot;RMSE&quot;: 2950.374,
+  &quot;MAPE&quot;: 4.884,
+  &quot;RMSPE&quot;: 6.802
+}</pre></div></details><details class="card"><summary><span class="method">GET</span><span class="url">/metadata</span><span class="badge ok">200</span></summary><div class="body"><p><b>Metadata</b><br><span class="muted">Expected status 200. Frontend use: Model Compare. Full response: <a href="responses/16_GET_metadata.json">responses/16_GET_metadata.json</a></span></p><b>Request</b><pre>{
+  &quot;headers&quot;: {
+    &quot;Authorization&quot;: &quot;Bearer [hidden]&quot;
+  }
+}</pre><b>Response</b><pre>{
+  &quot;project_title&quot;: &quot;Explainable Sales Forecasting with AI-Generated Retail Recommendations: A Rossmann Case Study&quot;,
+  &quot;dataset&quot;: &quot;Rossmann Store Sales&quot;,
+  &quot;forecasting&quot;: {
+    &quot;weekly&quot;: {
+      &quot;selected_model&quot;: &quot;XGBoost&quot;,
+      &quot;target&quot;: &quot;WeeklySales&quot;,
+      &quot;feature_count&quot;: 45,
+      &quot;validation_mae&quot;: 2660.301,
+      &quot;test_metrics&quot;: {
+        &quot;MAE&quot;: 1989.39,
+        &quot;RMSE&quot;: 2950.374,
+        &quot;MAPE&quot;: 4.884,
+        &quot;RMSPE&quot;: 6.802
+      }
+    },
+    &quot;monthly&quot;: {
+      &quot;selected_model&quot;: &quot;XGBoost&quot;,
+      &quot;target&quot;: &quot;MonthlySales&quot;,
+      &quot;feature_count&quot;: 41,
+      &quot;validation_mae&quot;: 9377.573,
+      &quot;test_metrics&quot;: {
+        &quot;MAE&quot;: 8678.174,
+        &quot;RMSE&quot;: 11486.236,
+        &quot;MAPE&quot;: 4.875,
+        &quot;RMSPE&quot;: 6.417
+      }
+    }
+  },
+  &quot;model_selection&quot;: {
+    &quot;primary_metric&quot;: &quot;Validation MAE&quot;,
+    &quot;test_set_use&quot;: &quot;Final evaluation only&quot;
+  },
+  &quot;explainability&quot;: [
+    &quot;XGBoost feature importance&quot;,
+    &quot;Global SHAP importance&quot;,
+    &quot;Local SHAP explanations&quot;
+  ],
+  &quot;architecture&quot;: {
+    &quot;artifact_first&quot;: true,
+    &quot;runtime_retraining&quot;: false,
+    &quot;backend&quot;: &quot;FastAPI&quot;,
+    &quot;frontend&quot;: &quot;React&quot;,
+    &quot;ai_recommendations&quot;: true
+  },
+  &quot;dss_output&quot;: {
+    &quot;contains_actual_sales&quot;: false,
+    &quot;contains_predicted_sales&quot;: true,
+    &quot;contains_shap_factors&quot;: true,
+    &quot;contains_forecast_summary&quot;: true
+  }
+}</pre></div></details><details class="card"><summary><span class="method">GET</span><span class="url">/metadata/dss-output?forecast_type=weekly&amp;store_id=1</span><span class="badge ok">200</span></summary><div class="body"><p><b>DSS output</b><br><span class="muted">Expected status 200. Frontend use: Not called by a frontend page. Full response: <a href="responses/17_GET_metadata_dss_output.json">responses/17_GET_metadata_dss_output.json</a></span></p><b>Request</b><pre>{
+  &quot;headers&quot;: {
+    &quot;Authorization&quot;: &quot;Bearer [hidden]&quot;
+  }
+}</pre><b>Response</b><pre>{
+  &quot;store_id&quot;: 1,
+  &quot;forecast_type&quot;: &quot;weekly&quot;,
+  &quot;period&quot;: &quot;2015-07-27&quot;,
+  &quot;record_count&quot;: 1,
+  &quot;dss_output&quot;: [
+    {
+      &quot;Store&quot;: 1,
+      &quot;Period&quot;: &quot;2015-07-27&quot;,
+      &quot;Forecast Type&quot;: &quot;Weekly&quot;,
+      &quot;Predicted Sales&quot;: 27682.52,
+      &quot;Important Positive Factors&quot;: &quot;promotion activity, time progression, time since previous promotion&quot;,
+      &quot;Important Negative Factors&quot;: &quot;recent 12-week average sales, recent 4-week average sales, recent 8-week weighted sales trend&quot;,
+      &quot;Forecast Summary&quot;: &quot;Weekly predicted sales: 27,683. Main factors increasing the model prediction: promotion activity, time progression, time since previous promotion. Main factors decreasing the model prediction: recent 12-week average sales, recent 4-week average sales, recent 8-week weighted sales trend.&quot;
+    }
+  ]
+}</pre></div></details><details class="card"><summary><span class="method">GET</span><span class="url">/metadata/features?forecast_type=weekly</span><span class="badge ok">200</span></summary><div class="body"><p><b>Feature list</b><br><span class="muted">Expected status 200. Frontend use: Not called by a frontend page. Full response: <a href="responses/18_GET_metadata_features.json">responses/18_GET_metadata_features.json</a></span></p><b>Request</b><pre>{
+  &quot;headers&quot;: {
+    &quot;Authorization&quot;: &quot;Bearer [hidden]&quot;
+  }
+}</pre><b>Response (long lists shortened)</b><pre>{
+  &quot;forecast_type&quot;: &quot;weekly&quot;,
+  &quot;feature_count&quot;: 45,
+  &quot;features&quot;: [
+    &quot;Store&quot;,
+    &quot;WeekOfYear&quot;,
+    &quot;OpenDays&quot;,
+    &quot;PromoDays&quot;,
+    &quot;SchoolHolidayDays&quot;,
+    &quot;... shortened on this page: 40 more items in the saved JSON file&quot;
+  ]
+}</pre></div></details><details class="card"><summary><span class="method">GET</span><span class="url">/agent/recommend/evidence?forecast_type=weekly&amp;store_id=1</span><span class="badge ok">200</span></summary><div class="body"><p><b>Recommendation evidence (no Claude call)</b><br><span class="muted">Expected status 200. Frontend use: AI Recommendations. Full response: <a href="responses/19_GET_agent_recommend_evidence.json">responses/19_GET_agent_recommend_evidence.json</a></span></p><b>Request</b><pre>{
+  &quot;headers&quot;: {
+    &quot;Authorization&quot;: &quot;Bearer [hidden]&quot;
+  }
+}</pre><b>Response (long lists shortened)</b><pre>{
+  &quot;store_id&quot;: 1,
+  &quot;forecast_type&quot;: &quot;weekly&quot;,
+  &quot;period&quot;: &quot;2015-07-27&quot;,
+  &quot;predicted_sales&quot;: 27682.52,
+  &quot;baseline_model_output&quot;: 40538.6793,
+  &quot;net_shap_adjustment&quot;: -12856.1593,
+  &quot;top_positive_drivers&quot;: [
+    {
+      &quot;feature&quot;: &quot;PromoDays&quot;,
+      &quot;readable_feature&quot;: &quot;Promotion activity&quot;,
+      &quot;shap_value&quot;: 4113.823
+    },
+    {
+      &quot;feature&quot;: &quot;TimeIndex&quot;,
+      &quot;readable_feature&quot;: &quot;Time progression&quot;,
+      &quot;shap_value&quot;: 382.5132
+    },
+    {
+      &quot;feature&quot;: &quot;periods_since_last_promo&quot;,
+      &quot;readable_feature&quot;: &quot;Time since last promotion&quot;,
+      &quot;shap_value&quot;: 349.3983
+    }
+  ],
+  &quot;top_negative_drivers&quot;: [
+    {
+      &quot;feature&quot;: &quot;rolling_mean_12&quot;,
+      &quot;readable_feature&quot;: &quot;Average sales over the previous 12 weeks&quot;,
+      &quot;shap_value&quot;: -4545.9204
+    },
+    {
+      &quot;feature&quot;: &quot;rolling_mean_4&quot;,
+      &quot;readable_feature&quot;: &quot;Average sales over the previous 4 weeks&quot;,
+      &quot;shap_value&quot;: -2074.6042
+    },
+    {
+      &quot;feature&quot;: &quot;EMA_8&quot;,
+      &quot;readable_feature&quot;: &quot;Recent sales trend over the previous 8 weeks&quot;,
+      &quot;shap_value&quot;: -1972.6764
+    }
+  ],
+  &quot;shap_drivers&quot;: [
+    {
+      &quot;feature&quot;: &quot;rolling_mean_12&quot;,
+      &quot;readable_feature&quot;: &quot;Average sales over the previous 12 weeks&quot;,
+      &quot;shap_value&quot;: -4545.9204
+    },
+    {
+      &quot;feature&quot;: &quot;PromoDays&quot;,
+      &quot;readable_feature&quot;: &quot;Promotion activity&quot;,
+      &quot;shap_value&quot;: 4113.823
+    },
+    {
+      &quot;feature&quot;: &quot;rolling_mean_4&quot;,
+      &quot;readable_feature&quot;: &quot;Average sales over the previous 4 weeks&quot;,
+      &quot;shap_value&quot;: -2074.6042
+    },
+    {
+      &quot;feature&quot;: &quot;EMA_8&quot;,
+      &quot;readable_feature&quot;: &quot;Recent sales trend over the previous 8 weeks&quot;,
+      &quot;shap_value&quot;: -1972.6764
+    },
+    {
+      &quot;feature&quot;: &quot;sales_lag_52&quot;,
+      &quot;readable_feature&quot;: &quot;Same week last year&quot;,
+      &quot;shap_value&quot;: -1955.784
+    },
+    &quot;... shortened on this page: 3 more items in the saved JSON file&quot;
+  ],
+  &quot;shap_feature_count&quot;: 45,
+  &quot;reconciliation_ok&quot;: true,
+  &quot;forecast_model&quot;: &quot;XGBoost&quot;,
+  &quot;explanation_source&quot;: &quot;Precomputed local SHAP&quot;
+}</pre></div></details>
+<h2>Not called</h2><ul><li><code>POST /agent/recommend</code>: makes a paid Claude call.</li><li><code>POST /auth/register</code> and <code>DELETE /auth/users/{username}</code>: write to the database.</li><li><code>GET /auth/users</code>: lists all accounts.</li><li>A real 403 store-block response, because the supplied account is not a manager. The pytest suite covers this rule with fake users.</li></ul>
+</main></body></html>

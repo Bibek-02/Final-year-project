@@ -1,0 +1,16 @@
+{
+  "group": "No login",
+  "title": "Backend is running",
+  "method": "GET",
+  "path": "/health",
+  "used_by": "Not called by a frontend page",
+  "request_headers": {},
+  "request_body": null,
+  "expected_status": 200,
+  "status": 200,
+  "response": {
+    "status": "ok",
+    "message": "Rossmann DSS backend is running"
+  },
+  "file": "responses/01_GET_health.json"
+}

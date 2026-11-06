@@ -1,0 +1,80 @@
+{
+  "group": "Logged in as admin",
+  "title": "Feature importance",
+  "method": "GET",
+  "path": "/shap/importance?forecast_type=weekly&top_n=15",
+  "used_by": "Not called by a frontend page",
+  "request_headers": {
+    "Authorization": "Bearer [hidden]"
+  },
+  "request_body": null,
+  "expected_status": 200,
+  "status": 200,
+  "response": {
+    "forecast_type": "weekly",
+    "top_n": 15,
+    "importance": [
+      {
+        "Feature": "rolling_mean_12",
+        "Importance": 0.213
+      },
+      {
+        "Feature": "sales_lag_52",
+        "Importance": 0.1573
+      },
+      {
+        "Feature": "PromoDays",
+        "Importance": 0.1429
+      },
+      {
+        "Feature": "rolling_mean_8",
+        "Importance": 0.1208
+      },
+      {
+        "Feature": "EMA_8",
+        "Importance": 0.1004
+      },
+      {
+        "Feature": "rolling_mean_4",
+        "Importance": 0.0767
+      },
+      {
+        "Feature": "EMA_4",
+        "Importance": 0.0432
+      },
+      {
+        "Feature": "sales_lag_2",
+        "Importance": 0.0369
+      },
+      {
+        "Feature": "periods_since_last_promo",
+        "Importance": 0.026
+      },
+      {
+        "Feature": "OpenDays",
+        "Importance": 0.0136
+      },
+      {
+        "Feature": "WeekOfYear",
+        "Importance": 0.0076
+      },
+      {
+        "Feature": "MonthStartDays",
+        "Importance": 0.0067
+      },
+      {
+        "Feature": "WeekendDays",
+        "Importance": 0.0065
+      },
+      {
+        "Feature": "sales_lag_4",
+        "Importance": 0.0053
+      },
+      {
+        "Feature": "sales_lag_1",
+        "Importance": 0.0043
+      }
+    ]
+  },
+  "file": "responses/13_GET_shap_importance.json"
+}

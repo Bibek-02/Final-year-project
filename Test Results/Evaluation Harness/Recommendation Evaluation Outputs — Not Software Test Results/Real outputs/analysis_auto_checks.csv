@@ -1,0 +1,11 @@
+check,metric,value
+flag_causal_language,flagged_rate,0.0
+flag_invented_quantities,flagged_rate,0.0
+flag_urgency_priority_risk_language,flagged_rate,0.0
+flag_realised_data_mentions,flagged_rate,0.041666666666666664
+flag_guarantee_language,flagged_rate,0.08333333333333333
+flag_numeric_grounding,flagged_rate,0.5
+evidence_refs_allowlist_share,pass_rate,1.0
+evidence_refs_nonempty,pass_rate,1.0
+generation_succeeded,pass_rate,1.0
+sections_present,pass_rate,1.0

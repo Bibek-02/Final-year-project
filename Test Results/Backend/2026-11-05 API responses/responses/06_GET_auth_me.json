@@ -1,0 +1,19 @@
+{
+  "group": "Logged in as admin",
+  "title": "Current user",
+  "method": "GET",
+  "path": "/auth/me",
+  "used_by": "Not called by a frontend page",
+  "request_headers": {
+    "Authorization": "Bearer [hidden]"
+  },
+  "request_body": null,
+  "expected_status": 200,
+  "status": 200,
+  "response": {
+    "username": "admin",
+    "role": "admin",
+    "assigned_store": null
+  },
+  "file": "responses/06_GET_auth_me.json"
+}

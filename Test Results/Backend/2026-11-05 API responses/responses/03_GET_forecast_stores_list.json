@@ -1,0 +1,15 @@
+{
+  "group": "No login",
+  "title": "Request with no token is rejected",
+  "method": "GET",
+  "path": "/forecast/stores/list",
+  "used_by": "Store selector",
+  "request_headers": {},
+  "request_body": null,
+  "expected_status": 401,
+  "status": 401,
+  "response": {
+    "detail": "Not authenticated"
+  },
+  "file": "responses/03_GET_forecast_stores_list.json"
+}

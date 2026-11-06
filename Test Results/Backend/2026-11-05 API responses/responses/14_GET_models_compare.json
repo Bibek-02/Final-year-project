@@ -1,0 +1,44 @@
+{
+  "group": "Logged in as admin",
+  "title": "Model comparison",
+  "method": "GET",
+  "path": "/models/compare?forecast_type=weekly",
+  "used_by": "Model Compare",
+  "request_headers": {
+    "Authorization": "Bearer [hidden]"
+  },
+  "request_body": null,
+  "expected_status": 200,
+  "status": 200,
+  "response": {
+    "filter": "weekly",
+    "record_count": 3,
+    "comparison": [
+      {
+        "Model": "XGBoost",
+        "Forecast Type": "Weekly",
+        "MAE": 1989.39,
+        "RMSE": 2950.374,
+        "MAPE": 4.884,
+        "RMSPE": 6.802
+      },
+      {
+        "Model": "Random Forest",
+        "Forecast Type": "Weekly",
+        "MAE": 2739.026,
+        "RMSE": 4116.175,
+        "MAPE": 6.69,
+        "RMSPE": 9.818
+      },
+      {
+        "Model": "Moving Average 12 Weeks",
+        "Forecast Type": "Weekly",
+        "MAE": 6485.035,
+        "RMSE": 7511.622,
+        "MAPE": 16.499,
+        "RMSPE": 19.266
+      }
+    ]
+  },
+  "file": "responses/14_GET_models_compare.json"
+}

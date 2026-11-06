@@ -1,0 +1,72 @@
+Date/time: 2026-10-07 11:26:05 +02:00 (Romance Standard Time)
+OS: Microsoft Windows 11 Home, Version 10.0.26200
+
+Git commit hash (HEAD) at time of test run: 1ef298c67eefd78604d83392125b9ad2a5a20e8c
+Git branch: main
+
+git status --short (at time of test run):
+ M "../Model traning/rossmann.ipynb"
+ M backend/app/schemas/agent.py
+ M backend/app/services/agent_service.py
+ M backend/model_artifacts/dss_forecast_output.csv
+ M backend/model_artifacts/final_model_comparison.csv
+ M backend/model_artifacts/model_metadata.json
+ M backend/model_artifacts/monthly_global_shap_importance.csv
+ M backend/model_artifacts/monthly_local_shap_explanation.csv
+ M backend/model_artifacts/monthly_test_predictions.csv
+ M backend/model_artifacts/selected_models.csv
+ M backend/model_artifacts/weekly_global_shap_importance.csv
+ M backend/model_artifacts/weekly_local_shap_explanation.csv
+ M backend/model_artifacts/weekly_test_predictions.csv
+ M backend/model_artifacts/xgb_monthly_feature_importance.csv
+ M backend/model_artifacts/xgb_monthly_model.pkl
+ M backend/model_artifacts/xgb_weekly_feature_importance.csv
+ M backend/model_artifacts/xgb_weekly_model.pkl
+ M frontend/src/App.js
+ M frontend/src/__tests__/Agent.test.jsx
+ M frontend/src/pages/agent/Agent.jsx
+ M frontend/src/pages/compare/ModelCompare.jsx
+?? ../Thesis/CS_project.docx
+?? ../article/
+?? ../code.zip
+?? backend/tests/__init__.py
+?? backend/tests/test_agent.py
+?? backend/tests/test_auth.py
+?? backend/tests/test_forecast.py
+?? backend/tests/test_store_comparison.py
+?? backend/tests/test_store_scope.py
+?? frontend/src/__tests__/ModelCompare.test.jsx
+
+NOTE: Working tree was NOT clean at test-run time (20 modified files, 6 untracked paths as listed above).
+
+POST-RUN UPDATE (after this evidence run, same session): the 20 modified files plus the
+5 new backend test files and 1 new frontend test file were committed:
+  - commit 5333a3a "Drop urgency field from agent recommendations; add backend test suite"
+  - commit 419722b "Ignore generated verification-evidence runs" (adds evidence/ to code/.gitignore)
+New HEAD: 419722b8c4952eea37adce332c6127b8dcbc62ba
+Remaining untracked (left deliberately, not part of the code change set):
+  ?? ../Thesis/CS_project.docx
+  ?? ../article/
+  ?? ../code.zip
+These were NOT present at the time the tests above were executed, so they do not affect
+the recorded test results — the test results above were produced against commit
+1ef298c67eefd78604d83392125b9ad2a5a20e8c with the working tree in the dirty state shown above.
+
+python --version: Python 3.13.4
+node --version: v22.16.0
+npm --version: 10.9.2
+
+Backend Python package versions (pip show):
+pytest: 9.1.1
+fastapi: 0.136.3
+pandas: 3.0.3
+numpy: 2.4.6
+scikit-learn: 1.8.0
+xgboost: 3.2.0
+shap: 0.52.0
+anthropic: 0.105.2
+
+Frontend npm package versions (npm list react recharts axios):
+react: 19.2.6
+recharts: 3.8.1
+axios: 1.16.1

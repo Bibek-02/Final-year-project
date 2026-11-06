@@ -1,0 +1,31 @@
+{
+  "group": "Logged in as admin",
+  "title": "DSS output",
+  "method": "GET",
+  "path": "/metadata/dss-output?forecast_type=weekly&store_id=1",
+  "used_by": "Not called by a frontend page",
+  "request_headers": {
+    "Authorization": "Bearer [hidden]"
+  },
+  "request_body": null,
+  "expected_status": 200,
+  "status": 200,
+  "response": {
+    "store_id": 1,
+    "forecast_type": "weekly",
+    "period": "2015-07-27",
+    "record_count": 1,
+    "dss_output": [
+      {
+        "Store": 1,
+        "Period": "2015-07-27",
+        "Forecast Type": "Weekly",
+        "Predicted Sales": 27682.52,
+        "Important Positive Factors": "promotion activity, time progression, time since previous promotion",
+        "Important Negative Factors": "recent 12-week average sales, recent 4-week average sales, recent 8-week weighted sales trend",
+        "Forecast Summary": "Weekly predicted sales: 27,683. Main factors increasing the model prediction: promotion activity, time progression, time since previous promotion. Main factors decreasing the model prediction: recent 12-week average sales, recent 4-week average sales, recent 8-week weighted sales trend."
+      }
+    ]
+  },
+  "file": "responses/17_GET_metadata_dss_output.json"
+}

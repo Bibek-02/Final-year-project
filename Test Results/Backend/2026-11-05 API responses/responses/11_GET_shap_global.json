@@ -1,0 +1,95 @@
+{
+  "group": "Logged in as admin",
+  "title": "Global SHAP",
+  "method": "GET",
+  "path": "/shap/global?forecast_type=weekly&top_n=15",
+  "used_by": "Explanation",
+  "request_headers": {
+    "Authorization": "Bearer [hidden]"
+  },
+  "request_body": null,
+  "expected_status": 200,
+  "status": 200,
+  "response": {
+    "forecast_type": "weekly",
+    "top_n": 15,
+    "features": [
+      {
+        "Feature": "PromoDays",
+        "Readable Feature": "promotion activity",
+        "Mean_SHAP": 5448.7437
+      },
+      {
+        "Feature": "rolling_mean_12",
+        "Readable Feature": "recent 12-week average sales",
+        "Mean_SHAP": 3721.4243
+      },
+      {
+        "Feature": "sales_lag_52",
+        "Readable Feature": "sales fifty-two weeks ago",
+        "Mean_SHAP": 2934.0354
+      },
+      {
+        "Feature": "EMA_8",
+        "Readable Feature": "recent 8-week weighted sales trend",
+        "Mean_SHAP": 1419.6742
+      },
+      {
+        "Feature": "rolling_mean_4",
+        "Readable Feature": "recent 4-week average sales",
+        "Mean_SHAP": 1001.6917
+      },
+      {
+        "Feature": "rolling_mean_8",
+        "Readable Feature": "recent 8-week average sales",
+        "Mean_SHAP": 873.9144
+      },
+      {
+        "Feature": "OpenDays",
+        "Readable Feature": "number of open days",
+        "Mean_SHAP": 819.4808
+      },
+      {
+        "Feature": "EMA_4",
+        "Readable Feature": "recent 4-week weighted sales trend",
+        "Mean_SHAP": 708.6556
+      },
+      {
+        "Feature": "periods_since_last_promo",
+        "Readable Feature": "time since previous promotion",
+        "Mean_SHAP": 599.4528
+      },
+      {
+        "Feature": "SchoolHolidayDays",
+        "Readable Feature": "school holiday period",
+        "Mean_SHAP": 454.3401
+      },
+      {
+        "Feature": "sales_lag_2",
+        "Readable Feature": "sales two periods ago",
+        "Mean_SHAP": 443.4142
+      },
+      {
+        "Feature": "WeekOfYear",
+        "Readable Feature": "week of year",
+        "Mean_SHAP": 405.1718
+      },
+      {
+        "Feature": "sales_lag_1",
+        "Readable Feature": "previous period sales",
+        "Mean_SHAP": 340.3247
+      },
+      {
+        "Feature": "TimeIndex",
+        "Readable Feature": "time progression",
+        "Mean_SHAP": 318.0814
+      },
+      {
+        "Feature": "sales_lag_4",
+        "Readable Feature": "sales four weeks ago",
+        "Mean_SHAP": 277.4801
+      }
+    ]
+  },
+  "file": "responses/11_GET_shap_global.json"
+}
