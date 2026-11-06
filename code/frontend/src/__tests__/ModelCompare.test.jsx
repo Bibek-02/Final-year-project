@@ -193,16 +193,6 @@ test('clarifies that these results are global/artifact-level, not selected-store
   expect(screen.getByText(/not selected-store results/i)).toBeInTheDocument();
 });
 
-test('shows the evaluation-scope strip with no runtime retraining/SHAP and the final model', async () => {
-  mockHappyPath();
-  await renderPage();
-
-  expect(screen.getByText('Historical held-out evaluation')).toBeInTheDocument();
-  expect(screen.getByText('Runtime retraining: No')).toBeInTheDocument();
-  expect(screen.getByText('Runtime SHAP calculation: No')).toBeInTheDocument();
-  expect(screen.getByText('Final model: XGBoost')).toBeInTheDocument();
-});
-
 test('shows a retryable error banner when data loading fails', async () => {
   client.get.mockRejectedValue(new Error('network down'));
   await renderPage();

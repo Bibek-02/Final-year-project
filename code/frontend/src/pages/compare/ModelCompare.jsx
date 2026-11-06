@@ -121,31 +121,6 @@ function FrequencyToggle({ frequency, setFrequency }) {
   );
 }
 
-// Compact evaluation-scope pills — establishes up front that this page is
-// historical/held-out only, never live inference or runtime retraining/SHAP.
-function ScopeStrip({ metadata, selectedModel }) {
-  const pills = [
-    'Historical held-out evaluation',
-    `Runtime retraining: ${metadata?.architecture?.runtime_retraining ? 'Yes' : 'No'}`,
-    'Runtime SHAP calculation: No',
-    `Final model: ${selectedModel || 'XGBoost'}`,
-    `Metrics: ${METRICS.join(', ')}`,
-  ];
-  return (
-    <div className="flex flex-wrap gap-2 mb-4">
-      {pills.map(p => (
-        <span
-          key={p}
-          className="badge bg-gray-100 text-gray-600 border border-gray-200
-                     dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 text-xs"
-        >
-          {p}
-        </span>
-      ))}
-    </div>
-  );
-}
-
 // Key/value summary row — CSS grid on desktop, stacked rows on mobile via
 // the same grid collapsing to one column (same idiom as Agent.jsx's
 // EvidenceRow, kept local per this codebase's per-page convention).
@@ -218,8 +193,6 @@ export default function ModelCompare({ selectedStore = 1, setActivePage }) {
         title="Model Evaluation"
         subtitle="Comparing saved models on held-out Rossmann test data — no live forecasting or runtime retraining."
       />
-
-      <ScopeStrip metadata={metadata} selectedModel={best?.best_model} />
 
       <div className="card mb-6">
         <div className="flex items-center justify-between flex-wrap gap-3">

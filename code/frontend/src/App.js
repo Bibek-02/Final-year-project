@@ -10,6 +10,12 @@ import StoreComparison, { DEFAULT_COMPARISON_FILTERS } from './pages/compare/Sto
 import Agent from './pages/agent/Agent';
 import UserManagement from './pages/admin/UserManagement';
 
+// Pages that never read selectedStore/forecastType from the top bar — each
+// either has no store/forecast concept at all (users) or manages its own
+// equivalent control internally (storeComparison, compare). Showing the bar
+// on these pages would let a reader toggle controls that visibly do nothing.
+const PAGES_WITHOUT_STORE_SELECTOR = new Set(['storeComparison', 'compare', 'users']);
+
 export default function App() {
   const [user,               setUser]               = useState(null);
   const [activePage,         setActivePage]         = useState('dashboard');
@@ -75,7 +81,7 @@ export default function App() {
       />
       <div className="flex-1 min-w-0">
         <div className="max-w-6xl mx-auto px-5 py-6">
-          {activePage !== 'storeComparison' && (
+          {!PAGES_WITHOUT_STORE_SELECTOR.has(activePage) && (
             <StoreSelector
               selectedStore={selectedStore}
               setSelectedStore={setSelectedStore}

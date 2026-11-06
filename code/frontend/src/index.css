@@ -252,6 +252,10 @@ body {
    heavyweight scrollbar next to the page's main one. */
 .sidebar-scroll {
   scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+}
+
+.dark .sidebar-scroll {
   scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
 }
 
@@ -260,8 +264,12 @@ body {
 }
 
 .sidebar-scroll::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.15);
+  background-color: rgba(0, 0, 0, 0.15);
   border-radius: 9999px;
+}
+
+.dark .sidebar-scroll::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.15);
 }
 
 @media (prefers-reduced-motion: reduce) {

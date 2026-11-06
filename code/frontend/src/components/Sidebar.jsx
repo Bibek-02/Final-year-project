@@ -33,8 +33,8 @@ function Brand({ collapsed }) {
       </div>
       {!collapsed && (
         <div className="min-w-0">
-          <p className="text-white font-bold text-sm tracking-wide leading-none">
-            Rossmann <span className="text-indigo-400">DSS</span>
+          <p className="text-gray-900 dark:text-white font-bold text-sm tracking-wide leading-none">
+            Rossmann <span className="text-indigo-600 dark:text-indigo-400">DSS</span>
           </p>
           <p className="text-gray-500 text-[11px] mt-1 truncate">Explainable Demand Forecasting</p>
         </div>
@@ -59,11 +59,11 @@ function ModelInUseCard({ forecastType }) {
   if (!data) return null;
 
   return (
-    <div className="mx-3 mb-3 flex-shrink-0 flex items-center gap-2 bg-gray-800/60
-                    border border-gray-700 rounded-xl px-3 py-2">
-      <Trophy size={13} className="text-indigo-400 flex-shrink-0" />
-      <p className="text-xs text-gray-300 truncate">
-        <span className="font-semibold text-white">{data.best_model}</span>
+    <div className="mx-3 mb-3 flex-shrink-0 flex items-center gap-2 bg-gray-50 dark:bg-gray-800/60
+                    border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2">
+      <Trophy size={13} className="text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
+      <p className="text-xs text-gray-600 dark:text-gray-300 truncate">
+        <span className="font-semibold text-gray-900 dark:text-white">{data.best_model}</span>
         {' '}· {forecastType === 'weekly' ? 'Weekly' : 'Monthly'} · RMSE {Math.round(data.RMSE).toLocaleString('en-US')}
       </p>
     </div>
@@ -92,7 +92,7 @@ export default function Sidebar({ activePage, setActivePage, user, onLogout, for
       {groups.map(({ group, items }) => (
         <div key={group}>
           {!isCollapsed && (
-            <p className="px-4 mb-1.5 text-xs font-medium text-gray-500">
+            <p className="px-4 mb-1.5 text-xs font-medium text-gray-400 dark:text-gray-500">
               {group}
             </p>
           )}
@@ -108,8 +108,8 @@ export default function Sidebar({ activePage, setActivePage, user, onLogout, for
                   isCollapsed ? 'justify-center px-0 py-2.5' : 'gap-3 px-3 py-2.5'
                 } ${
                   activePage === link.key
-                    ? 'bg-gray-800 text-white'
-                    : 'text-gray-400 hover:text-white hover:bg-gray-800/60'
+                    ? 'bg-indigo-50 text-indigo-700 dark:bg-gray-800 dark:text-white'
+                    : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-800/60'
                 }`}
               >
                 <link.icon size={18} />
@@ -123,7 +123,7 @@ export default function Sidebar({ activePage, setActivePage, user, onLogout, for
   );
 
   const renderUserFooter = (isCollapsed) => (
-    <div className={`border-t border-gray-700 flex items-center flex-shrink-0 ${
+    <div className={`border-t border-gray-200 dark:border-gray-700 flex items-center flex-shrink-0 ${
       isCollapsed ? 'flex-col gap-2 py-3' : 'justify-between px-4 py-3'
     }`}>
       <div className={`flex items-center gap-2 min-w-0 ${isCollapsed ? 'flex-col' : ''}`}>
@@ -133,7 +133,7 @@ export default function Sidebar({ activePage, setActivePage, user, onLogout, for
         </div>
         {!isCollapsed && (
           <div className="text-xs min-w-0">
-            <p className="text-white font-medium truncate">{user?.username}</p>
+            <p className="text-gray-800 dark:text-white font-medium truncate">{user?.username}</p>
             <p className="text-gray-500 capitalize">{user?.role}</p>
           </div>
         )}
@@ -142,15 +142,17 @@ export default function Sidebar({ activePage, setActivePage, user, onLogout, for
         <button
           onClick={toggleTheme}
           title={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
-          className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400
-                     hover:text-white hover:bg-gray-800 transition-colors flex-shrink-0"
+          className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-500
+                     hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400
+                     dark:hover:text-white dark:hover:bg-gray-800 transition-colors flex-shrink-0"
         >
           <ThemeIcon size={14} />
         </button>
         <button
           onClick={onLogout}
           title="Sign out"
-          className={`text-gray-400 hover:text-white rounded-lg hover:bg-gray-800
+          className={`text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg
+                     dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-800
                      transition-colors flex-shrink-0 ${
             isCollapsed ? 'p-1.5' : 'text-xs px-2 py-1.5'
           }`}
@@ -167,9 +169,9 @@ export default function Sidebar({ activePage, setActivePage, user, onLogout, for
           disappearing, so navigation (and a way back to full width) always
           stays reachable without a separate "where did it go" affordance. */}
       <aside className={`hidden lg:flex lg:flex-col ${collapsed ? 'w-[72px]' : 'w-64'}
-                        flex-shrink-0 h-screen sticky top-0 bg-gradient-to-b
-                        from-gray-900 via-gray-800 to-gray-900 border-r
-                        border-gray-700 transition-all duration-200`}>
+                        flex-shrink-0 h-screen sticky top-0 bg-white border-r border-gray-200
+                        dark:bg-gradient-to-b dark:from-gray-900 dark:via-gray-800 dark:to-gray-900
+                        dark:border-gray-700 transition-all duration-200`}>
         {/* Top row: logo + inline collapse toggle (expanded) or stacked
             (collapsed) — matches the reference's icons-beside-title layout
             rather than a floating edge button. */}
@@ -181,7 +183,8 @@ export default function Sidebar({ activePage, setActivePage, user, onLogout, for
             onClick={() => setCollapsed(c => !c)}
             aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             className="w-7 h-7 flex items-center justify-center rounded-lg
-                       text-gray-400 hover:text-white hover:bg-gray-800/60
+                       text-gray-500 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400
+                       dark:hover:text-white dark:hover:bg-gray-800/60
                        transition-colors flex-shrink-0"
           >
             {collapsed ? <ChevronRight size={15} /> : <ChevronLeft size={15} />}
@@ -194,13 +197,14 @@ export default function Sidebar({ activePage, setActivePage, user, onLogout, for
 
       {/* Mobile top bar */}
       <div className="lg:hidden sticky top-0 z-40 flex items-center justify-between
-                      px-4 h-14 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900
-                      border-b border-gray-700 shadow-xl">
+                      px-4 h-14 bg-white border-b border-gray-200 shadow-sm
+                      dark:bg-gradient-to-r dark:from-gray-900 dark:via-gray-800 dark:to-gray-900
+                      dark:border-gray-700 dark:shadow-xl">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 bg-indigo-600 rounded-lg flex items-center justify-center">
             <span className="text-white font-black text-xs">R</span>
           </div>
-          <span className="text-white font-bold text-sm">Rossmann DSS</span>
+          <span className="text-gray-900 dark:text-white font-bold text-sm">Rossmann DSS</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 bg-indigo-600 rounded-full flex items-center
@@ -210,8 +214,9 @@ export default function Sidebar({ activePage, setActivePage, user, onLogout, for
           <button
             onClick={() => setDrawerOpen(true)}
             aria-label="Open navigation menu"
-            className="text-gray-300 hover:text-white p-2 rounded-lg
-                       hover:bg-gray-700 transition-colors"
+            className="text-gray-500 hover:text-gray-900 hover:bg-gray-100 p-2 rounded-lg
+                       dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700
+                       transition-colors"
           >
             <Menu size={20} />
           </button>
@@ -228,13 +233,15 @@ export default function Sidebar({ activePage, setActivePage, user, onLogout, for
             aria-hidden="true"
           />
           <div className="relative w-72 max-w-[80vw] h-full flex flex-col
-                          bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900
+                          bg-white dark:bg-gradient-to-b dark:from-gray-900
+                          dark:via-gray-800 dark:to-gray-900
                           shadow-2xl animate-fadeIn">
             <button
               onClick={() => setDrawerOpen(false)}
               aria-label="Close navigation menu"
-              className="absolute right-3 top-4 text-gray-300 hover:text-white
-                         p-1.5 rounded-lg hover:bg-gray-700 transition-colors"
+              className="absolute right-3 top-4 text-gray-500 hover:text-gray-900
+                         hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white
+                         p-1.5 rounded-lg dark:hover:bg-gray-700 transition-colors"
             >
               <X size={20} />
             </button>
