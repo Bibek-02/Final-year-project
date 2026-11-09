@@ -1,0 +1,101 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.13.4, pytest-9.1.1, pluggy-1.6.0 -- C:\Python313\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\adhik\OneDrive\BSC computer science 2025\1final\Final_year thesis\code\backend
+plugins: anyio-4.13.0
+collecting ... collected 74 items
+
+tests/test_agent.py::test_agent_recommend_returns_structured_output PASSED [  1%]
+tests/test_agent.py::test_agent_recommendation_schema_has_no_urgency_field PASSED [  2%]
+tests/test_agent.py::test_agent_prompt_excludes_actual_sales_and_future_data PASSED [  4%]
+tests/test_agent.py::test_agent_prompt_never_asks_for_urgency_priority_or_risk_level PASSED [  5%]
+tests/test_agent.py::test_agent_prompt_includes_predicted_sales_and_legit_lag_features PASSED [  6%]
+tests/test_agent.py::test_agent_recommend_respects_store_scope PASSED    [  8%]
+tests/test_agent.py::test_agent_recommend_unknown_store_is_404 PASSED    [  9%]
+tests/test_agent.py::test_agent_recommend_maps_claude_errors_to_http_status[exc0-429] PASSED [ 10%]
+tests/test_agent.py::test_agent_recommend_maps_claude_errors_to_http_status[exc1-503] PASSED [ 12%]
+tests/test_agent.py::test_agent_recommend_maps_claude_errors_to_http_status[exc2-502] PASSED [ 13%]
+tests/test_agent.py::test_agent_recommend_response_includes_backend_metadata PASSED [ 14%]
+tests/test_agent.py::test_agent_evidence_endpoint_returns_only_allowlisted_fields PASSED [ 16%]
+tests/test_agent.py::test_agent_evidence_reconciliation_ok_for_real_data PASSED [ 17%]
+tests/test_agent.py::test_agent_evidence_respects_store_scope PASSED     [ 18%]
+tests/test_agent.py::test_agent_evidence_endpoint_honours_a_specific_non_latest_period PASSED [ 20%]
+tests/test_agent.py::test_agent_service_filters_unallowlisted_artifact_row PASSED [ 21%]
+tests/test_agent.py::test_agent_evidence_refs_unknown_reference_is_dropped PASSED [ 22%]
+tests/test_agent.py::test_agent_forecast_shap_period_mismatch_returns_clear_error PASSED [ 24%]
+tests/test_auth.py::test_login_success_returns_token PASSED              [ 25%]
+tests/test_auth.py::test_login_wrong_password_is_rejected PASSED         [ 27%]
+tests/test_auth.py::test_login_unknown_user_is_rejected PASSED           [ 28%]
+tests/test_auth.py::test_me_returns_current_user PASSED                  [ 29%]
+tests/test_auth.py::test_admin_only_endpoint_rejects_manager PASSED      [ 31%]
+tests/test_auth.py::test_admin_only_endpoint_allows_admin PASSED         [ 32%]
+tests/test_auth.py::test_expired_token_is_rejected PASSED                [ 33%]
+tests/test_auth.py::test_garbage_token_is_rejected PASSED                [ 35%]
+tests/test_auth.py::test_users_list_excludes_password_hash PASSED        [ 36%]
+tests/test_auth.py::test_register_creates_manager PASSED                 [ 37%]
+tests/test_auth.py::test_register_duplicate_username_is_rejected PASSED  [ 39%]
+tests/test_auth.py::test_register_manager_without_store_is_rejected PASSED [ 40%]
+tests/test_auth.py::test_register_requires_admin PASSED                  [ 41%]
+tests/test_auth.py::test_delete_default_admin_is_protected PASSED        [ 43%]
+tests/test_auth.py::test_delete_non_manager_account_is_protected PASSED  [ 44%]
+tests/test_auth.py::test_delete_user_removes_manager PASSED              [ 45%]
+tests/test_auth.py::test_delete_unknown_user_is_404 PASSED               [ 47%]
+tests/test_auth.py::test_delete_requires_admin PASSED                    [ 48%]
+tests/test_forecast.py::test_stores_list_includes_known_store PASSED     [ 50%]
+tests/test_forecast.py::test_forecast_normalises_fields_regardless_of_granularity PASSED [ 51%]
+tests/test_forecast.py::test_forecast_unknown_store_is_404 PASSED        [ 52%]
+tests/test_forecast.py::test_global_shap_returns_ranked_features PASSED  [ 54%]
+tests/test_forecast.py::test_local_shap_matches_requested_store PASSED   [ 55%]
+tests/test_forecast.py::test_global_shap_includes_readable_feature PASSED [ 56%]
+tests/test_forecast.py::test_local_shap_includes_readable_feature PASSED [ 58%]
+tests/test_forecast.py::test_readable_feature_can_equal_raw_feature_for_unmapped_columns PASSED [ 59%]
+tests/test_forecast.py::test_feature_importance_is_ranked PASSED         [ 60%]
+tests/test_forecast.py::test_model_comparison_includes_champion_model PASSED [ 62%]
+tests/test_forecast.py::test_dss_output_and_shap_agree_on_period PASSED  [ 63%]
+tests/test_forecast.py::test_feature_list_has_expected_count PASSED      [ 64%]
+tests/test_store_comparison.py::test_unauthenticated_is_rejected PASSED  [ 66%]
+tests/test_store_comparison.py::test_manager_is_rejected PASSED          [ 67%]
+tests/test_store_comparison.py::test_admin_can_access PASSED             [ 68%]
+tests/test_store_comparison.py::test_default_range_is_full_available_range PASSED [ 70%]
+tests/test_store_comparison.py::test_weekly_default_range_has_1115_stores_and_13_periods PASSED [ 71%]
+tests/test_store_comparison.py::test_weekly_default_range_flags_five_incomplete_stores PASSED [ 72%]
+tests/test_store_comparison.py::test_monthly_default_range_has_no_incomplete_stores PASSED [ 74%]
+tests/test_store_comparison.py::test_difference_matches_predicted_minus_actual PASSED [ 75%]
+tests/test_store_comparison.py::test_comparison_totals_match_per_store_forecast_endpoint PASSED [ 77%]
+tests/test_store_comparison.py::test_narrower_period_range_reduces_expected_coverage PASSED [ 78%]
+tests/test_store_comparison.py::test_unknown_period_is_rejected PASSED   [ 79%]
+tests/test_store_comparison.py::test_start_after_end_is_rejected PASSED  [ 81%]
+tests/test_store_comparison.py::test_cross_granularity_period_is_rejected PASSED [ 82%]
+tests/test_store_comparison.py::test_zero_actual_sales_yields_null_percentage PASSED [ 83%]
+tests/test_store_comparison.py::test_duplicate_store_period_is_rejected_as_server_error PASSED [ 85%]
+tests/test_store_comparison.py::test_non_finite_value_is_rejected_as_server_error PASSED [ 86%]
+tests/test_store_scope.py::test_unauthenticated_request_is_rejected PASSED [ 87%]
+tests/test_store_scope.py::test_admin_can_access_any_store PASSED        [ 89%]
+tests/test_store_scope.py::test_manager_can_access_own_store PASSED      [ 90%]
+tests/test_store_scope.py::test_manager_is_blocked_from_other_store PASSED [ 91%]
+tests/test_store_scope.py::test_manager_is_blocked_on_every_scoped_endpoint[/forecast/1] PASSED [ 93%]
+tests/test_store_scope.py::test_manager_is_blocked_on_every_scoped_endpoint[/shap/local?store_id=1] PASSED [ 94%]
+tests/test_store_scope.py::test_manager_is_blocked_on_every_scoped_endpoint[/metadata/dss-output?store_id=1] PASSED [ 95%]
+tests/test_store_scope.py::test_manager_is_allowed_on_every_scoped_endpoint_for_own_store[/forecast/5] PASSED [ 97%]
+tests/test_store_scope.py::test_manager_is_allowed_on_every_scoped_endpoint_for_own_store[/shap/local?store_id=5] PASSED [ 98%]
+tests/test_store_scope.py::test_manager_is_allowed_on_every_scoped_endpoint_for_own_store[/metadata/dss-output?store_id=5] PASSED [100%]
+
+============================== warnings summary ===============================
+..\..\..\..\..\..\..\..\Python313\Lib\site-packages\fastapi\testclient.py:1
+  C:\Python313\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+tests/test_agent.py::test_agent_recommend_returns_structured_output
+  C:\Python313\Lib\pickle.py:1760: UserWarning: [11:27:28] WARNING: C:\actions-runner\_work\xgboost\xgboost\src\gbm\../common/error_msg.h:83: If you are loading a serialized model (like pickle in Python, RDS in R) or
+  configuration generated by an older version of XGBoost, please export the model by calling
+  `Booster.save_model` from that version first, then load it back in current version. See:
+  
+      https://xgboost.readthedocs.io/en/stable/tutorials/saving_model.html
+  
+  for more details about differences between saving model and serializing.
+  
+    setstate(state)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+- generated xml file: C:\Users\adhik\OneDrive\BSC computer science 2025\1final\Final_year thesis\code\evidence\run_20261007_1125\backend_junit.xml -
+======================= 74 passed, 2 warnings in 9.72s ========================
