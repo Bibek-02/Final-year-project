@@ -15,7 +15,7 @@ recommendations.
 
 ```
 React (CRA)  ──axios + JWT──▶  FastAPI  ──▶  ArtifactStore (in-memory pandas)
-  6 pages                        6 routers        model_artifacts/*.csv, *.pkl
+  8 pages                        6 routers        model_artifacts/*.csv, *.pkl
                                                     MongoDB (user accounts only)
                                                     Anthropic API (agent page only)
 ```
@@ -24,8 +24,7 @@ React (CRA)  ──axios + JWT──▶  FastAPI  ──▶  ArtifactStore (in-m
   artefacts into memory once at startup; every request reads from that
   in-memory store. Auth is JWT-based; managers are scoped server-side to
   their assigned store (`app/core/dependencies.py::enforce_store_scope`),
-  admins see everything. See [`backend/model_artifacts/ARTIFACTS.md`](backend/model_artifacts/ARTIFACTS.md)
-  for what each data file is and which endpoint serves it.
+  admins see everything.
 - **Frontend** (`frontend/`) — Create React App + Tailwind + Recharts.
 - **Database** — MongoDB, used only for user accounts (username, hashed
   password, role, assigned store). All forecast/SHAP/model data comes from
@@ -57,12 +56,7 @@ uvicorn app.main:app --reload
 The API is now at `http://127.0.0.1:8000`, with interactive docs at
 `http://127.0.0.1:8000/docs`.
 
-Run the backend test suite with `pytest` (from `backend/`). It never touches
-a real database or the live Anthropic API — user lookups are mocked with a
-fixed set of fake users (`tests/conftest.py`), and the Claude client is
-mocked in `tests/test_agent.py` — so it's fast, deterministic, and runnable
-without any secrets configured. It does load the real `model_artifacts/`
-data, since that's the thing worth testing against.
+To run the tests, see [Testing](#testing).
 
 ### Frontend
 
@@ -83,6 +77,24 @@ origin — the backend's CORS policy (`app/main.py`) only allows
 in as admin, then use the **Users** page to create manager accounts, each
 scoped to one store via `assigned_store`.
 
+## Testing
+
+| Suite | Test code | Run from | Command |
+|---|---|---|---|
+| Backend (pytest) | `backend/tests/` | `backend/` | `python -m pytest -v` |
+| Frontend (Jest) | `frontend/src/__tests__/` | `frontend/` | `$env:CI='true'; npx react-scripts test --watchAll=false --verbose` (PowerShell) |
+| Evaluation harness (pytest) | `evaluation/rubric/tests/` | `evaluation/rubric/` | `python -m pytest tests/ -v` |
+
+- **Backend:** user lookups are mocked with fake users (`tests/conftest.py`) and the Claude client is mocked in `tests/test_agent.py`, so no real user accounts or API calls are needed. The real `model_artifacts/` data is loaded.
+- **Frontend:** the API client (`src/api/client.js`) is mocked, so no backend is needed.
+- **Evaluation harness:** Claude is replaced by the `--dry-run` stub. It uses the backend's Python requirements.
+
+Recorded results are in [`../Test Results/`](../Test%20Results/). Start with `00 Results Summary.md`. Full instructions are in [`../Testing Guide.md`](../Testing%20Guide.md). The original run logs are in `evidence/`.
+
+## Recommendation evaluation
+
+`evaluation/rubric/` evaluates the quality of the agent's recommendations on 24 fixed test cases, scored by hand against `rubric_anchors.md`. See [`evaluation/rubric/README.md`](evaluation/rubric/README.md). Running `generate.py` without `--dry-run` makes paid Claude API calls.
+
 ## Roles
 
 | Role | Can see | Enforced |
@@ -100,37 +112,44 @@ backend/
 │   ├── core/
 │   │   ├── artifacts.py      # Loads model_artifacts/ into memory at startup
 │   │   ├── security.py       # Password hashing, JWT encode/decode, Mongo user CRUD
-│   │   └── dependencies.py   # get_current_user, require_admin, enforce_store_scope
+│   │   ├── dependencies.py   # get_current_user, require_admin, enforce_store_scope
+│   │   └── feature_labels.py # Plain-language feature names
 │   ├── schemas/               # Pydantic response models (also drives /docs)
 │   ├── services/               # Business logic — forecast/shap/agent
 │   │                            # (routers stay thin: parse params → call service → return)
 │   └── routers/                # forecast, shap, models, metadata, agent, auth
+├── tests/                   # pytest suite
 ├── scripts/seed_admin.py    # Bootstrap the first admin login
-├── model_artifacts/         # See ARTIFACTS.md — precomputed forecasts, SHAP, models
+├── model_artifacts/         # Precomputed forecasts, SHAP values, models
 └── requirements.txt
 
 frontend/
 └── src/
     ├── App.js                # Page routing (state-based, not URL-based)
     ├── api/client.js          # Axios instance, attaches JWT to every request
-    ├── lib/featureLabels.js   # Shared plain-language feature name mapping
-    ├── hooks/useApi.js        # Shared loading/error/fetch pattern used by every
-    │                          # data-fetching page (except UserManagement, which
-    │                          # refetches after create/delete, not just on mount)
-    ├── components/            # Navbar, StoreSelector
+    ├── context/ThemeContext.js # Light/dark theme
+    ├── lib/                   # featureLabels.js (plain-language feature names), theme.js
+    ├── hooks/                 # useApi (shared loading/error/fetch pattern),
+    │                          # useChartColors, useIsMobile, useToast
+    ├── components/            # Sidebar, StoreSelector, RecommendationsHandoff,
+    │                          # and shared UI (KPI cards, alerts, toasts, loaders, modals)
+    ├── __tests__/             # Jest + React Testing Library suites
     └── pages/                 # Grouped to mirror the thesis's own structure —
         ├── forecast/          #   Forecast:  Dashboard, ForecastChart
-        ├── explain/           #   Explain:   Explanation, BusinessPanel
+        ├── explain/           #   Explain:   Explanation
         ├── agent/             #   Decide:    Agent
-        ├── compare/           #   Evidence:  ModelCompare
+        ├── compare/           #   Evidence:  ModelCompare, StoreComparison
         ├── admin/             #   Admin:     UserManagement
         └── auth/              #   Login
+
+evaluation/rubric/           # Recommendation-quality evaluation harness and its outputs
+evidence/                    # Original test run logs
 ```
 
 ## Known limitations
 
 - Forecasts are replayed from a precomputed test set, not generated from
   live model inference — the trained `.pkl` models are loaded but not yet
-  called by any endpoint. See the note in `ARTIFACTS.md`.
+  called by any endpoint.
 - Global SHAP values are computed over a 1,000-row sample of the test set,
   not the full set.
