@@ -10,6 +10,42 @@ All scripts are run from the repo root (`code/`) with the same Python used
 by `backend/` (see `backend/requirements.txt`; no new dependencies added).
 Everything is deterministic (`random_state=42`).
 
+## Current status
+
+- **Live generation:** done for all 24 cases with `claude-opus-5`. The results are in `outputs/results.jsonl`.
+- **Hand scoring:** both passes are complete. `scoresheet.csv` holds all 24 cases, and `rescore_subset.csv` holds the 6 blind re-scores.
+- **Analysis:** done. The results tables and limitations are in `outputs/analysis_report.md`.
+- **Harness tests:** the recorded run passed 24 of 24. The log is in `../../../Test Results/Evaluation Harness/` and in `../../evidence/`.
+
+## Folder layout
+
+| Folder | What it does |
+|---|---|
+| `evaluation/` | Top-level folder for evaluation work. It holds only `rubric/`. |
+| `rubric/` | The harness: scripts that select cases, generate recommendations, run automatic checks, build scoring packets and analyse the scores. |
+| `rubric/tests/` | pytest suite for the harness scripts. Claude is replaced by the dry-run stub, so no API key or network is needed. |
+| `rubric/outputs/` | Every generated file: cases, recommendations, automatic checks, score sheets and analysis. See the next table. |
+| `rubric/outputs/packets/` | 24 readable scoring packets, one per case. Each shows the case details, the evidence given to the agent and its recommendation. |
+| `rubric/outputs/packets_rescore/` | 6 blind packets (`R1.md` to `R6.md`) for the second scoring pass. Store, period and granularity are removed. |
+
+## Output files
+
+| File | Contents |
+|---|---|
+| `cases.csv` | The 24 selected cases: store, period, granularity, promotion and high/low predicted sales |
+| `results.jsonl` | Real recommendations from the live run, with the inputs given to the agent |
+| `results_dryrun.jsonl` | Stubbed placeholder recommendations used for testing the pipeline. Not real results |
+| `auto_checks.csv` | Pass/fail and flagged-for-review automatic checks for each case |
+| `scoresheet.csv` | First-pass hand scores (0/1/2) on grounding, consistency, actionability and caution |
+| `rescore_subset.csv` | Blind second-pass scores for 6 cases |
+| `rescore_mapping.csv` | Links `R1` to `R6` back to case IDs. Read only by `analyse.py`, after scoring |
+| `scoring_aid_example_monthly_101_2015-06-01.md` | Worked example of scoring one case |
+| `analysis_summary_overall.csv`, `analysis_summary_by_granularity.csv`, `analysis_summary_by_cell.csv` | Mean and standard deviation of the scores, overall and broken down |
+| `analysis_auto_checks.csv` | Automatic-check pass and flag rates |
+| `analysis_agreement.csv` | Agreement between the first and second scoring passes |
+| `analysis_failures.csv` | Failed generations (none) |
+| `analysis_report.md` | All results tables plus the limitations |
+
 ## Phase A — no live API calls
 
 ```
@@ -42,6 +78,8 @@ freely regenerated. Everything downstream (`auto_checks.py`, `make_packets.py`,
 `analyse.py`) reads `results.jsonl` if it exists, falling back to
 `results_dryrun.jsonl` otherwise (`common.default_results_path()`).
 
+**Caution:** the score sheets are now filled in. `make_scoresheet.py` overwrites `scoresheet.csv`, `rescore_subset.csv` and `rescore_mapping.csv` with blank versions without asking, so don't rerun it unless you have a backup of the scores.
+
 At this point `scoresheet.csv`, `rescore_subset.csv`, and the human-readable
 `outputs/packets/*.md` / `outputs/packets_rescore/R1..R6.md` packets are ready
 for hand scoring (0/1/2 per criterion, using `rubric_anchors.md`).
@@ -51,6 +89,12 @@ not be consulted while filling in `rescore_subset.csv` from the
 the blind re-score back to the first pass afterwards; `make_packets.py` itself
 never reads `rescore_mapping.csv` to build the blind packets, and it strips
 the case's store id/period/granularity out of the evidence text they show.
+
+Optionally, to read all packets in one file while scoring:
+
+```
+python evaluation/rubric/combine_packets.py        # -> outputs/all_packets.md, outputs/all_packets_rescore.md
+```
 
 Once both score sheets are filled in and saved back into `outputs/`:
 
@@ -73,9 +117,10 @@ This writes `outputs/analysis_summary_*.csv`, `analysis_auto_checks.csv`,
 | `rubric_anchors.md` | Appendix C: 0/1/2 scoring anchors for the 4 criteria. |
 | `make_scoresheet.py` | Builds the blank `scoresheet.csv` + blind `rescore_subset.csv`/`rescore_mapping.csv`. |
 | `make_packets.py` | Builds human-readable `packets/*.md` (full) and `packets_rescore/R1..R6.md` (blind, de-identified). |
+| `combine_packets.py` | Joins the packets into `all_packets.md` and `all_packets_rescore.md` for easier reading. Optional; the score sheets stay the record. |
 | `analyse.py` | Aggregates hand scores + auto-checks into thesis-ready tables. |
 | `tests/` | pytest suite for `select_cases`/`generate --dry-run`/`auto_checks`/`make_packets`. |
-| `outputs/` | All generated CSV/JSONL/MD artefacts (see note below). |
+| `outputs/` | All generated CSV/JSONL/MD artefacts (see [Output files](#output-files)). |
 
 ## On `outputs/` and secrets
 
