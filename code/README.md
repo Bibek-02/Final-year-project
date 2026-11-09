@@ -53,6 +53,10 @@ python scripts/seed_admin.py    # creates the initial admin login (safe to re-ru
 uvicorn app.main:app --reload
 ```
 
+`requirements.txt` pins the exact versions the recorded tests ran with
+(Python 3.13). `bcrypt` is pinned to 4.0.1 because newer releases don't work
+with `passlib` 1.7.4.
+
 The API is now at `http://127.0.0.1:8000`, with interactive docs at
 `http://127.0.0.1:8000/docs`.
 
