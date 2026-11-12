@@ -14,7 +14,7 @@ For a readable version with summaries and Postman-style result pages, see [`../.
 | `backend_junit.xml` | The same backend run in JUnit XML format | 74 tests, 0 failures, 0 errors |
 | `backend_key_tests.txt` | 5 selected key requirement tests | 5 passed. These are part of the 74, not additional |
 | `frontend_jest.txt` | Full frontend Jest log | 290 passed, 0 failed, 0 skipped (9 suites) |
-| `notebook_assertions.txt` | The 9 `assert` statements in `Model traning/rossmann.ipynb`, listed by reading the notebook file | Not a test result: the notebook was not rerun |
+| `notebook_assertions.txt` | The 9 `assert` statements in `Notebook/rossmann.ipynb`, listed by reading the notebook file | Not a test result: the notebook was not rerun |
 | `environment.txt` | Git commit, git status, and Python, Node and package versions at the time of the run | — |
 | `SUMMARY.md` | Written summary of the commands and totals | — |
 

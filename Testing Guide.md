@@ -7,7 +7,7 @@ Where the tests are, how to run them, and where to find the results. All paths a
 | Backend | `code/backend/tests/` | `Test Results/Backend/` |
 | Frontend | `code/frontend/src/__tests__/` | `Test Results/Frontend/` |
 | Evaluation harness | `code/evaluation/rubric/tests/` | `Test Results/Evaluation Harness/` |
-| Notebook assertions | `Model traning/rossmann.ipynb` (no separate test suite) | `Test Results/Notebook Evidence/` |
+| Notebook assertions | `Notebook/rossmann.ipynb` (no separate test suite) | `Test Results/Notebook Evidence/` |
 
 ## How to run each suite
 
@@ -74,7 +74,7 @@ The saved responses can be read without running anything: `Test Results/Backend/
 | Frontend PASS list | `Test Results/Frontend/2026-10-07/Test Results.html` |
 | Evaluation harness log | `Test Results/Evaluation Harness/2026-10-16/evaluation_harness_pytest.txt` |
 | Notebook assertion list | `Test Results/Notebook Evidence/2026-10-07/notebook_assertions.txt` |
-| Original notebook | `Model traning/rossmann.ipynb` |
+| Original notebook | `Notebook/rossmann.ipynb` |
 | Recommendation evaluation report (not a software test) | `Test Results/Evaluation Harness/Recommendation Evaluation Outputs — Not Software Test Results/Real outputs/analysis_report.md` |
 
 Cite these as historical results. Each one describes the code at its run date. The 5 backend key tests are part of the 74 and should not be added to it.

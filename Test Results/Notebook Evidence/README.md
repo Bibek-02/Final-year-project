@@ -1,6 +1,6 @@
 # Notebook Evidence
 
-Original notebook, linked and not copied: [`Model traning/rossmann.ipynb`](../../Model%20traning/rossmann.ipynb)
+Original notebook, linked and not copied: [`Notebook/rossmann.ipynb`](../../Notebook/rossmann.ipynb)
 
 The two kinds of evidence below are separate. Neither is a fresh execution log.
 

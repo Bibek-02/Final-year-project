@@ -20,7 +20,7 @@ npm-debug.log*
 .ipynb_checkpoints/
 
 # Duplicate training scratch output (real copy lives in code/backend/model_artifacts)
-Model traning/model_artifacts/
+Notebook/model_artifacts/
 
 # OS
 .DS_Store
@@ -29,3 +29,6 @@ Thumbs.db
 # Editor
 .vscode/
 .idea/
+Thesis/*.docx
+article/
+*.zip
